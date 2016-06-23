@@ -1,0 +1,22 @@
+From: Nobumichi Tamura <ntamura@lbl.gov>
+Date: October 23, 2015 at 4:40:02 PM PDT
+To: Zack Gainsforth <zgainsforth@lbl.gov>
+Subject: Re: XRF detector information
+
+I know of 2) beryllium 12.5 um and 3) 350 um. The others will need to be measured.
+NT
+
+On Tue, Oct 20, 2015 at 7:35 PM, Zack Gainsforth <zgainsforth@lbl.gov> wrote:
+Hi Nobu,
+
+I need to know a few things about the XRF detector so I can compute fluorescence more accurately.  Do you know:
+
+1) Sample detector distance?  (It looks like 65 mm but I can’t see where the actual chip is because it is behind the protective window.)
+2) What is the detector window composition and thickness?
+3) What is the thickness of the Si chip (This is a silicon drift detector, right?)
+4) What is the takeoff angle?  (angle between the sample surface normal and the detector)
+
+Thanks!
+
+Zack
+

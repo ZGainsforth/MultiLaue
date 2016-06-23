@@ -1,0 +1,5 @@
+whitebeamflux.txt is from Nobu, and probably the best curve.  This is the one to use.
+
+12.3.2_flux_after.txt is the flux curve that Matthew Marcus gave me.
+12.3.2_flux_after extrapolated.txt contains the same thing but with a couple energies extrapolated off the end.
+XRF detector information.txt is info about the XRF detector so we can be quantitative.

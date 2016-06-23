@@ -1,0 +1,327 @@
+/Users/Zack/Library/Enthought/Canopy_64bit/User/bin/python "/Volumes/Zack/Desktop/Current Samples/MultiLaue/20151020 - 12.3.2 - Si Hyperlaue/SiHyperlaueFinal_shielded_results/AnalyzeFilteredLaueSpots.py"
+
+Reflection (-2,4,-2) with energy 12.4727 has intensities:
+No filter:     179624
+One filter:    145374
+Two filters:   113195
+Three filters: 87487.3
+Loading CXRO Scattering Files/o.nff
+Loading CXRO Scattering Files/si.nff
+[ 1.          0.80932357  0.63018051  0.48705905]
+(4, 2401)
+Best fit energy is 12230 eV
+Error in energy is 242.674.  Relative error is 1.95 percent
+
+Reflection (-3,3,-1) with energy 11.6191 has intensities:
+No filter:     75450
+One filter:    57699.3
+Two filters:   42137.3
+Three filters: 31094.3
+[ 1.          0.76473603  0.55848023  0.4121184 ]
+(4, 2401)
+Best fit energy is 11650 eV
+Error in energy is 30.8865.  Relative error is 0.27 percent
+
+Reflection (-4,2,-2) with energy 8.25873 has intensities:
+No filter:     51006.3
+One filter:    39122.3
+Two filters:   31676
+Three filters: 27269
+[ 1.          0.76700933  0.62102092  0.53461988]
+(4, 2401)
+Best fit energy is 10950 eV
+Error in energy is 2691.27.  Relative error is 32.59 percent
+
+Reflection (-3,3,-3) with energy 8.44862 has intensities:
+No filter:     108551
+One filter:    79688.3
+Two filters:   58605
+Three filters: 44455.3
+[ 1.          0.73410737  0.53988282  0.40953282]
+(4, 2401)
+Best fit energy is 9460 eV
+Error in energy is 1011.38.  Relative error is 11.97 percent
+
+Reflection (-5,3,-1) with energy 14.5188 has intensities:
+No filter:     55171.7
+One filter:    48789.7
+Two filters:   41322.7
+Three filters: 35388.3
+[ 1.          0.88432468  0.74898348  0.64142223]
+/Users/Zack/Library/Enthought/Canopy_64bit/User/lib/python2.7/site-packages/matplotlib/pyplot.py:516: RuntimeWarning: More than 20 figures have been opened. Figures created through the pyplot interface (`matplotlib.pyplot.figure`) are retained until explicitly closed and may consume too much memory. (To control this warning, see the rcParam `figure.max_open_warning`).
+  max_open_warning, RuntimeWarning)
+(4, 2401)
+Best fit energy is 14290 eV
+Error in energy is 228.773.  Relative error is 1.58 percent
+
+Reflection (-6,4,-2) with energy 16.1084 has intensities:
+No filter:     49529.3
+One filter:    45649
+Two filters:   40600.7
+Three filters: 36326.3
+[ 1.          0.92165585  0.81972972  0.73343069]
+(4, 2401)
+Best fit energy is 16070 eV
+Error in energy is 38.3913.  Relative error is 0.24 percent
+
+Reflection (-3,5,-3) with energy 14.3804 has intensities:
+No filter:     56773.3
+One filter:    49371.3
+Two filters:   41738
+Three filters: 35442.3
+[ 1.          0.86962189  0.73516909  0.62427783]
+(4, 2401)
+Best fit energy is 14030 eV
+Error in energy is 350.378.  Relative error is 2.44 percent
+
+Reflection (-6,6,-4) with energy 18.2109 has intensities:
+No filter:     27170.3
+One filter:    25571.3
+Two filters:   23457
+Three filters: 21859.7
+[ 1.          0.94114905  0.86333133  0.80454172]
+(4, 2401)
+Best fit energy is 17980 eV
+Error in energy is 230.924.  Relative error is 1.27 percent
+
+Reflection (-5,5,-3) with energy 15.6641 has intensities:
+No filter:     71024.3
+One filter:    63953.7
+Two filters:   56438.7
+Three filters: 50326.3
+[ 1.          0.90044726  0.79463846  0.70857875]
+(4, 2401)
+Best fit energy is 15530 eV
+Error in energy is 134.092.  Relative error is 0.86 percent
+
+Reflection (-5,3,-3) with energy 10.8264 has intensities:
+No filter:     47683.3
+One filter:    33384
+Two filters:   23246.3
+Three filters: 16941
+[ 1.          0.70011884  0.48751485  0.35528137]
+(4, 2401)
+Best fit energy is 9450 eV
+Error in energy is 1376.35.  Relative error is 12.71 percent
+
+Reflection (-4,6,-6) with energy 15.6731 has intensities:
+No filter:     37663.3
+One filter:    33856.3
+Two filters:   29727.3
+Three filters: 26745
+[ 1.          0.89892026  0.78929109  0.71010709]
+(4, 2401)
+Best fit energy is 15520 eV
+Error in energy is 153.098.  Relative error is 0.98 percent
+
+Reflection (-3,5,-5) with energy 12.9682 has intensities:
+No filter:     60020.7
+One filter:    49110.3
+Two filters:   39276
+Three filters: 31912.3
+[ 1.          0.81822372  0.6543746   0.53168908]
+(4, 2401)
+Best fit energy is 12730 eV
+Error in energy is 238.189.  Relative error is 1.84 percent
+
+Reflection (-3,7,-5) with energy 19.1076 has intensities:
+No filter:     15334.7
+One filter:    14447.7
+Two filters:   13271
+Three filters: 12701
+[ 1.          0.9421572   0.86542475  0.82825406]
+(4, 2401)
+Best fit energy is 18710 eV
+Error in energy is 397.553.  Relative error is 2.08 percent
+
+Reflection (-7,5,-3) with energy 18.2763 has intensities:
+No filter:     17486
+One filter:    16444.3
+Two filters:   15048.7
+Three filters: 14038.3
+[ 1.          0.94042853  0.8606123   0.80283274]
+(4, 2401)
+Best fit energy is 17910 eV
+Error in energy is 366.315.  Relative error is 2.00 percent
+
+Reflection (-6,8,-6) with energy 21.9812 has intensities:
+No filter:     1088.33
+One filter:    1039
+Two filters:   987.667
+Three filters: 950.333
+[ 1.          0.95467075  0.90750383  0.87320061]
+(4, 2401)
+Best fit energy is 20990 eV
+Error in energy is 991.207.  Relative error is 4.51 percent
+
+Reflection (-5,7,-5) with energy 19.3319 has intensities:
+No filter:     9097.33
+One filter:    8722
+Two filters:   8214.33
+Three filters: 7800
+[ 1.          0.95874249  0.90293859  0.85739411]
+(4, 2401)
+Best fit energy is 20130 eV
+Error in energy is 798.113.  Relative error is 4.13 percent
+
+Reflection (-8,6,-6) with energy 18.9759 has intensities:
+No filter:     11106.7
+One filter:    10443
+Two filters:   9673.67
+Three filters: 9065.33
+[ 1.          0.9402461   0.87097839  0.81620648]
+(4, 2401)
+Best fit energy is 18420 eV
+Error in energy is 555.862.  Relative error is 2.93 percent
+
+Reflection (-3,5,-7) with energy 13.5906 has intensities:
+No filter:     28480.3
+One filter:    24097.3
+Two filters:   19951
+Three filters: 16773.7
+[ 1.          0.84610433  0.70051849  0.58895612]
+(4, 2401)
+Best fit energy is 13490 eV
+Error in energy is 100.604.  Relative error is 0.74 percent
+
+Reflection (-6,6,-8) with energy 17.1105 has intensities:
+No filter:     16360
+One filter:    15253
+Two filters:   13876.7
+Three filters: 12732.3
+[ 1.          0.93233496  0.84820701  0.77825998]
+(4, 2401)
+Best fit energy is 17210 eV
+Error in energy is 99.4599.  Relative error is 0.58 percent
+
+Reflection (-9,5,-3) with energy 21.6287 has intensities:
+No filter:     1416
+One filter:    1393.67
+Two filters:   1307
+Three filters: 1271.33
+[ 1.          0.98422787  0.9230226   0.89783427]
+(4, 2401)
+Best fit energy is 22140 eV
+Error in energy is 511.34.  Relative error is 2.36 percent
+
+Reflection (-7,5,-5) with energy 16.223 has intensities:
+No filter:     28517.7
+One filter:    26027
+Two filters:   23292
+Three filters: 21186.7
+[ 1.          0.91266233  0.81675686  0.74293128]
+(4, 2401)
+Best fit energy is 16270 eV
+Error in energy is 46.9678.  Relative error is 0.29 percent
+
+Reflection (-3,7,-7) with energy 18.1235 has intensities:
+No filter:     8470.33
+One filter:    7975.33
+Two filters:   7269
+Three filters: 6806.67
+[ 1.          0.94156074  0.85817166  0.803589  ]
+(4, 2401)
+Best fit energy is 17900 eV
+Error in energy is 223.549.  Relative error is 1.23 percent
+
+Reflection (-5,7,-7) with energy 18.4141 has intensities:
+No filter:     11673.7
+One filter:    10996
+Two filters:   9953.67
+Three filters: 9381
+[ 1.          0.94194912  0.85265983  0.80360355]
+(4, 2401)
+Best fit energy is 17830 eV
+Error in energy is 584.065.  Relative error is 3.17 percent
+
+Reflection (-10,6,-8) with energy 21.0544 has intensities:
+No filter:     994.333
+One filter:    993
+Two filters:   927.333
+Three filters: 911
+[ 1.          0.99865907  0.93261817  0.91619175]
+(4, 2401)
+Best fit energy is 23240 eV
+Error in energy is 2185.62.  Relative error is 10.38 percent
+
+Reflection (-6,8,-10) with energy 21.5008 has intensities:
+No filter:     908.333
+One filter:    905
+Two filters:   889
+Three filters: 844
+[ 1.          0.99633028  0.9787156   0.92917431]
+(4, 2401)
+Best fit energy is 26000 eV
+Error in energy is 4499.16.  Relative error is 20.93 percent
+
+Reflection (-9,5,-5) with energy 19.0485 has intensities:
+No filter:     4517
+One filter:    4224.67
+Two filters:   3845.33
+Three filters: 3656.33
+[ 1.          0.93528153  0.85130249  0.80946056]
+(4, 2401)
+Best fit energy is 18030 eV
+Error in energy is 1018.47.  Relative error is 5.35 percent
+
+Reflection (-3,7,-9) with energy 18.6289 has intensities:
+No filter:     4632
+One filter:    4373.33
+Two filters:   4066.33
+Three filters: 3852
+[ 1.          0.94415659  0.87787853  0.83160622]
+(4, 2401)
+Best fit energy is 18960 eV
+Error in energy is 331.139.  Relative error is 1.78 percent
+
+Reflection (-9,5,-7) with energy 18.3781 has intensities:
+No filter:     4831
+One filter:    4578.33
+Two filters:   4251.67
+Three filters: 4060
+[ 1.          0.94769889  0.88008004  0.84040571]
+(4, 2401)
+Best fit energy is 19260 eV
+Error in energy is 881.929.  Relative error is 4.80 percent
+
+Reflection (-5,7,-9) with energy 18.8185 has intensities:
+No filter:     6235
+One filter:    5816.33
+Two filters:   5515.33
+Three filters: 5186
+[ 1.          0.93285218  0.88457632  0.83175621]
+(4, 2401)
+Best fit energy is 19170 eV
+Error in energy is 351.451.  Relative error is 1.87 percent
+
+Reflection (-9,7,-7) with energy 21.7454 has intensities:
+No filter:     575.333
+One filter:    572.333
+Two filters:   555.333
+Three filters: 540.333
+[ 1.          0.99478563  0.96523754  0.9391657 ]
+(4, 2401)
+Best fit energy is 26000 eV
+Error in energy is 4254.57.  Relative error is 19.57 percent
+
+Reflection (-7,7,-9) with energy 19.861 has intensities:
+No filter:     3142.33
+One filter:    2935.67
+Two filters:   2784.67
+Three filters: 2692
+[ 1.          0.93423146  0.886178    0.85668824]
+(4, 2401)
+Best fit energy is 20150 eV
+Error in energy is 289.002.  Relative error is 1.46 percent
+
+Reflection (-11,5,-7) with energy 21.1742 has intensities:
+No filter:     716
+One filter:    714
+Two filters:   666.333
+Three filters: 636.667
+[ 1.          0.9972067   0.93063315  0.88919926]
+(4, 2401)
+Best fit energy is 21580 eV
+Error in energy is 405.795.  Relative error is 1.92 percent
+
+Process finished with exit code 0
