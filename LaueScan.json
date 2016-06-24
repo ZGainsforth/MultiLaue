@@ -1,0 +1,38 @@
+{
+    "MultiLaueVersion": {
+        "Version": 1.0
+    }, 
+    "ScanInfo": {
+        "Synchrotron": "ALS", 
+        "ScanType": "Laue", 
+        "xPixels": 26, 
+        "zPixels": 1, 
+        "BeamLine": "12.3.2", 
+        "Detector": "Pilatus", 
+        "Energy": -1, 
+        "yPixels": 24, 
+        "ScanName": "GRA95229_mLaue_6", 
+        "ScanDate": "2016-04-28"
+    }, 
+    "RawScanInfo": {
+        "FileNameFormat": "GRA95229_mLaue_6_%05d.tif", 
+        "EndIndex": 624, 
+        "StartIndex": 1, 
+        "RawDataPath": "/Users/Zack/Desktop/20160428 - 12.3.2/003 GRA95229,30/010 GRA95229_Laue_6"
+    }, 
+    "Calibration": {
+        "xPixels": 1043, 
+        "DetectorDistance": 162.498, 
+        "pitch": 0, 
+        "yCenter": 230.63, 
+        "xmm": 179.0, 
+        "TwoThetaCenter": 75.0, 
+        "roll": 0, 
+        "yaw": 0, 
+        "xCenter": 538.153, 
+        "yPixels": 981, 
+        "DetName": "ALS12.3.2Pilatus", 
+        "ymm": 168.387, 
+        "Energy": -1
+    }
+}
