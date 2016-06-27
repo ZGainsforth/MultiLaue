@@ -12,9 +12,11 @@ TARGET = MultiLaueGUI
 TEMPLATE = app
 
 
-SOURCES += main.cpp\
-        multilauemain.cpp
+SOURCES += main.cpp \
+    MultiLaueGUI.cpp
 
-HEADERS  += multilauemain.h
+HEADERS  += \
+    MultiLaueGUI.h
 
-FORMS    += multilauemain.ui
+FORMS    += \
+    MultiLaueGUI.ui

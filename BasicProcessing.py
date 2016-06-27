@@ -7,12 +7,16 @@ import h5py
 import multiprocessing
 import time
 
-def LoadScan(HDF5FileName):
+def LoadScan(HDF5FileName, readwrite=False):
     # Read the HDF file
-    f = h5py.File(HDF5FileName, 'r')#, swmr=True)
+    if readwrite == False:
+        f = h5py.File(HDF5FileName, 'r')  # , swmr=True)
+    else:
+        f = h5py.File(HDF5FileName, 'r+')#, swmr=True)
+
 
     # Make sure this is a version we can read.
-    assert f.attrs['MultiLaueVersion'] == 1.0, 'MultiLaue only supports version 1.0 currently.'
+    assert f.attrs['MultiLaueVersion'] == '1.0', 'MultiLaue only supports version 1.0 currently.'
 
     # Get the scan group.
     Scan = f['Scan']
@@ -20,8 +24,8 @@ def LoadScan(HDF5FileName):
     assert Scan.attrs['Synchrotron'] == 'ALS', 'MultiLaue only supports ALS beamline 12.3.2 with the Pilatus detector currently'
     assert Scan.attrs['BeamLine'] == '12.3.2', 'MultiLaue only supports ALS beamline 12.3.2 with the Pilatus detector currently'
     assert Scan.attrs['Detector'] == 'Pilatus', 'MultiLaue only supports ALS beamline 12.3.2 with the Pilatus detector currently'
-    # And right now we only do Laue.
-    assert Scan.attrs['ScanType'] == 'Laue', 'MultiLaue only supports Laue scans currently'
+    # And right now we only do Laue and MultiLaue.
+    assert Scan.attrs['ScanType'] in ['Mono', 'Laue', 'MultiLaue'], 'MultiLaue only supports Mono, Laue and MultiLaue scans currently'
 
     # Done.
     return f, Scan
@@ -86,22 +90,25 @@ def MakeSumImage(Scan):
     #
     # MultiTime = time.time() - MultiStart
 
-
-    SingleStart = time.time()
+    #SingleStart = time.time()
 
     Cube = Scan['DataCube']
 
-    # Make a sum image with the dimensions of the last two dimensions of the cube (image size)
-    Sum = np.zeros(Cube.shape[2:])
+    # Make a sum image with the dimensions of the image.
+    Sum = np.zeros(Cube.shape[2:4])
 
     # Now process all the images into it!
     for y in range(Cube.shape[1]):
         for x in range(Cube.shape[0]):
             print "Sum image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
-            Sum += Cube[x, y, :, :]
+            if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
+                # The sum image of a Laue scan is the sum of each frame.
+                Sum += Cube[x, y, :, :]
+            elif Scan.attrs['ScanType'] == 'MultiLaue':
+                # MultiLaue sums are just the sum of each frame with the first filter position.
+                Sum += Cube[x, y, :, :, 0]
 
     SumLog = np.log(Sum)
-
 
     # # plt.imshow(SumLog, interpolation='none', cmap='gray')
     # # plt.show()
@@ -132,18 +139,24 @@ def MakeStDevImage(Scan):
     for y in range(Cube.shape[1]):
         for x in range(Cube.shape[0]):
             print "StDev image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
-            StDev += (Cube[x, y, :, :] - MeanImage)**2
+            if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
+                StDev += (Cube[x, y, :, :] - MeanImage) ** 2
+            elif Scan.attrs['ScanType'] == 'MultiLaue':
+                # Same as for Laue/mono except we use only the first filter position.
+                StDev += (Cube[x, y, :, :, 0] - MeanImage) ** 2
+
 
     # N-1 in case of low number of pixels.
-    StDev = np.sqrt(StDev) / (N-1)
+    StDev = np.sqrt(StDev / (N-1))
     StDevLog = np.log(StDev)
 
     return StDev, StDevLog
 
 if __name__ == '__main__':
 
-    f, Scan = LoadScan('GRA95229_mLaue_6.hdf5')
+    f, Scan = LoadScan('GRA95229_mLaue_7.hdf5', readwrite=True)
     Sum, SumLog = MakeSumImage(Scan)
+    Scan.create_dataset('SumImage', data=Sum)
     # Scan.create_dataset('SumImage', data=Sum)
     StDev, StDevLog = MakeStDevImage(Scan)
 

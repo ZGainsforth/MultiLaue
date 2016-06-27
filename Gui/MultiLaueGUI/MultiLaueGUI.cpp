@@ -1,14 +1,14 @@
-#include "multilauemain.h"
+#include "MultiLaueGUI.h"
 #include "ui_multilauemain.h"
 
-MultiLaueMain::MultiLaueMain(QWidget *parent) :
+MultiLaueGUI::MultiLaueGUI(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MultiLaueMain)
 {
     ui->setupUi(this);
 }
 
-MultiLaueMain::~MultiLaueMain()
+MultiLaueGUI::~MultiLaueGUI()
 {
     delete ui;
 }

@@ -7,13 +7,13 @@ namespace Ui {
 class MultiLaueMain;
 }
 
-class MultiLaueMain : public QMainWindow
+class MultiLaueGUI : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit MultiLaueMain(QWidget *parent = 0);
-    ~MultiLaueMain();
+    explicit MultiLaueGUI(QWidget *parent = 0);
+    ~MultiLaueGUI();
 
 private:
     Ui::MultiLaueMain *ui;
