@@ -1,6 +1,6 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2016-06-21T21:49:16
+# Project created by QtCreator 2016-07-05T20:30:51
 #
 #-------------------------------------------------
 
@@ -8,15 +8,13 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = MultiLaueGUI
+TARGET = MultiLaueGui
 TEMPLATE = app
 
 
 SOURCES += main.cpp \
-    MultiLaueGUI.cpp
+    multilauemainwindow.cpp
 
-HEADERS  += \
-    MultiLaueGUI.h
+HEADERS  += multilauemainwindow.h
 
-FORMS    += \
-    MultiLaueGUI.ui
+FORMS    += multilauemainwindow.ui

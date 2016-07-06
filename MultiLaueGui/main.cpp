@@ -1,10 +1,10 @@
-#include "MultiLaueGUI.h"
+#include "multilauemainwindow.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    MultiLaueGUI w;
+    MultiLaueMainWindow w;
     w.show();
 
     return a.exec();
