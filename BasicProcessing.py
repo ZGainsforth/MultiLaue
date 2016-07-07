@@ -43,7 +43,7 @@ def MakeSumImageParallelY(RowNumber, NumberOfData, DataQueue, DoneQueue):
     DoneQueue.put(Sum)
     return
 
-def MakeSumImage(Scan):
+def MakeSumImage(Scan, StatusFunc=None):
 
     # I originally coded this as single core, and then made a multicore version using multiprocessing.  However, the
     # procedure is IO bound so I am putting it back to single core.  I am leaving the multicore code here because I
@@ -100,7 +100,12 @@ def MakeSumImage(Scan):
     # Now process all the images into it!
     for y in range(Cube.shape[1]):
         for x in range(Cube.shape[0]):
-            print "Sum image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
+            StatusStr = "Sum image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
+            if StatusFunc is not None:
+                StatusFunc(StatusStr)
+            else:
+                print StatusStr
+
             if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
                 # The sum image of a Laue scan is the sum of each frame.
                 Sum += Cube[x, y, :, :]
@@ -123,7 +128,7 @@ def MakeSumImage(Scan):
 
     return Sum, SumLog
 
-def MakeStDevImage(Scan):
+def MakeStDevImage(Scan, StatusFunc=None):
     """ This produces the standard deviation image and expects the Sum image to be already populated."""
 
     Cube = Scan['DataCube']
@@ -138,7 +143,12 @@ def MakeStDevImage(Scan):
     # Now process all the images as the square terms.
     for y in range(Cube.shape[1]):
         for x in range(Cube.shape[0]):
-            print "StDev image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
+            StatusStr = "StDev image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
+            if StatusFunc is not None:
+                StatusFunc(StatusStr)
+            else:
+                print StatusStr
+
             if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
                 StDev += (Cube[x, y, :, :] - MeanImage) ** 2
             elif Scan.attrs['ScanType'] == 'MultiLaue':
@@ -151,6 +161,31 @@ def MakeStDevImage(Scan):
     StDevLog = np.log(StDev)
 
     return StDev, StDevLog
+
+def MakeTopographFromCoordinate(Scan, Coord):
+    Cube = Scan['DataCube']
+
+    Topo = np.zeros(Cube.shape[0:2])
+
+    for y in range(Cube.shape[1]):
+        for x in range(Cube.shape[0]):
+            if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
+                Topo[x,y] += Cube[x, y, Coord[0], Coord[1]]
+            elif Scan.attrs['ScanType'] == 'MultiLaue':
+                # Same as for Laue/mono except we use only the first filter position.
+                Topo[x, y] += Cube[x, y, Coord[0], Coord[1], 0]
+
+    return Topo
+
+def GetSingleImageFromTopographCoordinate(Scan, Coord):
+    Cube = Scan['DataCube']
+
+    if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
+        SingleImage = Cube[Coord[0], Coord[1], :, :]
+    elif Scan.attrs['ScanType'] == 'MultiLaue':
+        SingleImage = Cube[Coord[0], Coord[1], :, :, 0]
+
+    return SingleImage
 
 if __name__ == '__main__':
 
