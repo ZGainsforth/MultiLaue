@@ -106,9 +106,11 @@ def ReadConfigFile(FileName):
 
     return Config
 
-def ImportScan(ConfigFile):
+def ImportScan(ConfigFile, WorkingDirectory=None, StatusFunc=None):
     # Read in the info about the scan so we can import the data into HDF5.
-    Config = ReadConfigFile(ConfigFile)
+    Config = ReadConfigFile(os.path.join(WorkingDirectory, ConfigFile))
+    Config['WorkingDirectory'] = WorkingDirectory
+    Config['StatusFunc'] = StatusFunc
 
     # Check what kind of scan this is.
     if Config['ScanInfo']['ScanType'] == 'Mono':
@@ -125,7 +127,8 @@ def ImportMonoScan(Config):
     RawScanInfo = Config['RawScanInfo']
 
     # Make the HDF file
-    h5 = h5py.File(Config['ScanInfo']['ScanName'] + '.hdf5', 'w')
+    h5FileName = os.path.join(Config['WorkingDirectory'], Config['ScanInfo']['ScanName'] + '.hdf5')
+    h5 = h5py.File(h5FileName, 'w')
     # Version number goes on the root node.
     h5.attrs['MultiLaueVersion'] = '1.0'
 
@@ -169,20 +172,25 @@ def ImportMonoScan(Config):
             # Read this image in and populate the cube.
             try:
                 with tifffile.TiffFile(os.path.join(FilePath, FileNameFormat % i)) as T:
-                    #print T[0].tags['image_description'].value
-                    print "Loading image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
+                    StatusStr = "Loading image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
+                    if Config['StatusFunc'] is not None:
+                        Config['StatusFunc'](StatusStr)
+                    else:
+                        print StatusStr
+
                     Cube[x, y, :, :] = T[0].asarray()
                     MetadataCube[x,y] = T[0].tags['image_description'].value
+
             except IOError:
                 print FileNameFormat % i + ' could not be found.  Substituting zeros.'
 
     # Now make the sum image (and log of the sum image) from the Cube.
-    Sum, SumLog = BasicProcessing.MakeSumImage(Scan)
+    Sum, SumLog = BasicProcessing.MakeSumImage(Scan, Config['StatusFunc'])
     Scan.create_dataset('SumImage', data=Sum)
     Scan.create_dataset('SumLogImage', data=SumLog)
 
     # And a stdev image.
-    StDev, StDevLog = BasicProcessing.MakeStDevImage(Scan)
+    StDev, StDevLog = BasicProcessing.MakeStDevImage(Scan, Config['StatusFunc'])
     Scan.create_dataset('StDevImage', data=StDev)
     Scan.create_dataset('StDevLogImage', data=StDevLog)
 
@@ -193,7 +201,8 @@ def ImportLaueScan(Config):
     RawScanInfo = Config['RawScanInfo']
 
     # Make the HDF file
-    h5 = h5py.File(Config['ScanInfo']['ScanName'] + '.hdf5', 'w')
+    h5FileName = os.path.join(Config['WorkingDirectory'], Config['ScanInfo']['ScanName'] + '.hdf5')
+    h5 = h5py.File(h5FileName, 'w')
     # Version number goes on the root node.
     h5.attrs['MultiLaueVersion'] = '1.0'
 
@@ -238,19 +247,23 @@ def ImportLaueScan(Config):
             try:
                 with tifffile.TiffFile(os.path.join(FilePath, FileNameFormat % i)) as T:
                     #print T[0].tags['image_description'].value
-                    print "Loading image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
+                    StatusStr = "Loading image: x=%d, y=%d, Pixel # %d of %d" % (x, y, y * Cube.shape[0] + x + 1, Cube.shape[0] * Cube.shape[1])
+                    if Config['StatusFunc'] is not None:
+                        Config['StatusFunc'](StatusStr)
+                    else:
+                        print StatusStr
                     Cube[x, y, :, :] = T[0].asarray()
                     MetadataCube[x,y] = T[0].tags['image_description'].value
             except IOError:
                 print FileNameFormat % i + ' could not be found.  Substituting zeros.'
 
     # Now make the sum image (and log of the sum image) from the Cube.
-    Sum, SumLog = BasicProcessing.MakeSumImage(Scan)
+    Sum, SumLog = BasicProcessing.MakeSumImage(Scan, Config['StatusFunc'])
     Scan.create_dataset('SumImage', data=Sum)
     Scan.create_dataset('SumLogImage', data=SumLog)
 
     # And a stdev image.
-    StDev, StDevLog = BasicProcessing.MakeStDevImage(Scan)
+    StDev, StDevLog = BasicProcessing.MakeStDevImage(Scan, Config['StatusFunc'])
     Scan.create_dataset('StDevImage', data=StDev)
     Scan.create_dataset('StDevLogImage', data=StDevLog)
 
@@ -258,7 +271,8 @@ def ImportLaueScan(Config):
 
 def ImportMultiLaueScan(Config):
     # Make the HDF file
-    h5 = h5py.File(Config['ScanInfo']['ScanName'] + '.hdf5', 'w')
+    h5FileName = os.path.join(Config['WorkingDirectory'], Config['ScanInfo']['ScanName'] + '.hdf5')
+    h5 = h5py.File(h5FileName, 'w')
     # Version number goes on the root node.
     h5.attrs['MultiLaueVersion'] = '1.0'
 
@@ -308,7 +322,11 @@ def ImportMultiLaueScan(Config):
                 FullPath = os.path.join(FilePath, LineDirectoryFormat%(y+1), FileNameFormat % (y+1, i+1))
                 try:
                     with tifffile.TiffFile(FullPath) as T:
-                        print "Loading image: x=%d, y=%d, f=%d, Frame # %d of %d" % (x, y, f, n, NumImages)
+                        StatusStr = "Loading image: x=%d, y=%d, f=%d, Frame # %d of %d" % (x, y, f, n, NumImages)
+                        if Config['StatusFunc'] is not None:
+                            Config['StatusFunc'](StatusStr)
+                        else:
+                            print StatusStr
                         Cube[x, y, :, :, f] = T[0].asarray()
                         MetadataCube[x, y, f] = T[0].tags['image_description'].value
                 except IOError:
@@ -318,12 +336,12 @@ def ImportMultiLaueScan(Config):
                 n += 1
 
     # Now make the sum image (and log of the sum image) from the Cube.
-    Sum, SumLog = BasicProcessing.MakeSumImage(Scan)
+    Sum, SumLog = BasicProcessing.MakeSumImage(Scan, Config['StatusFunc'])
     Scan.create_dataset('SumImage', data=Sum)
     Scan.create_dataset('SumLogImage', data=SumLog)
 
     # And a stdev image.
-    StDev, StDevLog = BasicProcessing.MakeStDevImage(Scan)
+    StDev, StDevLog = BasicProcessing.MakeStDevImage(Scan, Config['StatusFunc'])
     Scan.create_dataset('StDevImage', data=StDev)
     Scan.create_dataset('StDevLogImage', data=StDevLog)
 
@@ -332,17 +350,17 @@ def ImportMultiLaueScan(Config):
 if __name__ == '__main__':
 
     # # Just an example to get started.
-    # WriteExampleMonoConfigFile()
+    WriteExampleMonoConfigFile()
     # # Read the scan into an HDF5 file.
     # ImportScan('MonoScan.json')
 
     # # Just an example to get started.
-    # WriteExampleLaueConfigFile()
+    WriteExampleLaueConfigFile()
     # # Read the scan into an HDF5 file.
     # ImportScan('LaueScan.json')
 
     # Just an example to get started.
     WriteExampleMultiLaueConfigFile()
     # Read the scan into an HDF5 file.
-    ImportScan('MultiLaueScan.json')
+    #ImportScan('MultiLaueScan.json')
 

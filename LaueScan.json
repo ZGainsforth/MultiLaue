@@ -1,6 +1,6 @@
 {
     "MultiLaueVersion": {
-        "Version": 1.0
+        "Version": "1.0"
     }, 
     "ScanInfo": {
         "Synchrotron": "ALS", 
@@ -11,7 +11,7 @@
         "Detector": "Pilatus", 
         "Energy": -1, 
         "yPixels": 24, 
-        "ScanName": "GRA95229_mLaue_6", 
+        "ScanName": "GRA95229_Laue_6", 
         "ScanDate": "2016-04-28"
     }, 
     "RawScanInfo": {
