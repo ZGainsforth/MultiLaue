@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/Icons">
+        <file alias="Compute">Icons8/Electronics-96.png</file>
+        <file alias="Import">Icons8/Feed In-96.png</file>
+        <file alias="Open">Icons8/Open Folder-96.png</file>
+        <file alias="Save">Icons8/save.png</file>
+        <file alias="Save Topograph">Icons8/heat_map_save.png</file>
+        <file alias="Save Aggregate">Icons8/sigma_save.png</file>
+        <file alias="Save Single">Icons8/unicast_save.png</file>
+    </qresource>
+</RCC>
