@@ -135,6 +135,10 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.comboTopograph.currentIndexChanged.connect(self.comboTopograph_Changed)
         self.comboSingleImage.currentIndexChanged.connect(self.comboSingleImage_Changed)
 
+        # Set up members placeholders for threads that are used later.
+        self.ImportThread = None
+        self.MultiLaueThread = None
+
     def GetSingleImageCanvas(self):
         return self.canvasSingleImage
 
@@ -218,6 +222,13 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             self.SaveSingleImage(FileName)
 
     def ImportScan(self):
+        # Only allow one import at a time.
+        if self.ImportThread is not None:
+            QtGui.QMessageBox.warning(self, 'MultiLaue',
+                                      'Can only import one scan at a time.  Please wait for the previous import to finish.',
+                                      QtGui.QMessageBox.NoButton, QtGui.QMessageBox.Warning)
+            return
+
         FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan configuration file.', filter='JSON files (*.json);;All files (*.*)')
 
         if FileName != '':
@@ -229,17 +240,27 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
 
             # Set up a slot for the thread to update status in the GUI.
             self.connect(self.ImportThread, QtCore.SIGNAL("StatusFunc(PyQt_PyObject)"), self.StatusFunc)
+            self.connect(self.ImportThread, QtCore.SIGNAL('finished()'), self.ImportScanFinished)
 
             # Now start the thread
             if sys.gettrace() is None:
-                print 'Starting thread.'
                 self.ImportThread.start()
             else:
                 # Don't use a thread when debugging.  Just call the method directly.
                 self.ImportThread.run()
 
+    def ImportScanFinished(self):
+        self.ImportThread = None
+
 
     def ProcessMultiLaue(self):
+        # Only allow one import at a time.
+        if self.MultiLaueThread is not None:
+            QtGui.QMessageBox.warning(self, 'MultiLaue',
+                                      'Can only process one MultiLaue data set at a time.  Please wait for the previous processing to complete.',
+                                      QtGui.QMessageBox.NoButton, QtGui.QMessageBox.Warning)
+            return
+
         FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.',
                                                      filter='HDF5 files (*.hdf5);;All files (*.*)')
 
@@ -249,15 +270,18 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
 
             # Set up a slot for the thread to update status in the GUI.
             self.connect(self.MultiLaueThread, QtCore.SIGNAL("StatusFunc(PyQt_PyObject)"), self.StatusFunc)
+            self.connect(self.MultiLaueThread, QtCore.SIGNAL('finished()'), self.ProcessMultiLaueFinished)
 
             # Now start the thread
             if sys.gettrace() is None:
-                print 'Starting thread.'
                 self.MultiLaueThread.start()
             else:
                 # Don't use a thread when debugging.  Just call the method directly.
                 self.MultiLaueThread.run()
 
+    def ProcessMultiLaueFinished(self):
+        print 'ProcessMultiLaueFinished called'
+        self.MultiLaueThread = None
 
     def comboSumImage_Changed(self):
         WhichImage = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString())
@@ -284,12 +308,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
     def StatusFunc(self, StatusStr):
         # The status is ALWAYS written to the status bar.
         self.statusBar.showMessage(StatusStr)
-        # When doing loops (like during imports) we get hundreds or thousands of status updates and the GUI doesn't get
-        # updated until the loop is done.  So we need to tell the GUI to update every N status messages.
-        # If N = 1, then we are updating the status too much and use up all our CPU just writing status messages...
-        #if self.statusIndex % 10 == 0:
-            #QtGui.QApplication.processEvents()
-        #self.statusIndex += 1
+
 
     def DoubleClickEvent(self, Canvas, Coord):
         self.statusBar.showMessage('Selected: (x,y)=(%d,%d), value=%g' % Coord)
