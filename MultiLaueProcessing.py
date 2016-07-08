@@ -293,18 +293,13 @@ class ProcessMultiLaueThread(QtCore.QThread):
 
         EnergyCube = MakeMultiLaueEnergyCube(Scan, self.StatusFunc)
         f.close()
+        self.StatusFunc('MultiLaue processing complete.')
 
     def StatusFunc(self, StatusStr):
         if self.StatusSignal is not None:
             self.emit(QtCore.SIGNAL(self.StatusSignal), StatusStr)
         else:
             print StatusStr
-
-
-        # if self.StatusFunc is not None:
-        #     self.StatusFunc('Multilaue processing complete')
-        # else:
-        #     print 'Multilaue processing complete'
 
 
 # def ProcessMultiLaue(FileName, StatusFunc=None):

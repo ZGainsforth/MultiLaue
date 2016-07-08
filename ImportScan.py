@@ -7,6 +7,7 @@ import skimage.external.tifffile as tifffile
 import json
 import BasicProcessing
 import PhysicsBasics as pb
+from PyQt4 import QtGui, QtCore
 
 def WriteExampleMonoConfigFile():
     """Importing data into MultiLaue requires knowing all the beamline parameters and such.  These can be written into
@@ -121,6 +122,24 @@ def ImportScan(ConfigFile, WorkingDirectory=None, StatusFunc=None):
         return ImportMultiLaueScan(Config)
     else:
         print Config['ScanInfo']['ScanType'] + ' is an unsupported scan type.'
+
+class ImportScanThread(QtCore.QThread):
+    def __init__(self, ConfigFile, WorkingDirectory=None, StatusSignal=None):
+        QtCore.QThread.__init__(self)
+        self.ConfigFile = ConfigFile
+        self.WorkingDirectory = WorkingDirectory
+        self.StatusSignal = StatusSignal
+
+    def run(self):
+        ImportScan(self.ConfigFile, self.WorkingDirectory, self.StatusFunc)
+        self.StatusFunc('Import Complete')
+
+    def StatusFunc(self, StatusStr):
+        if self.StatusSignal is not None:
+            self.emit(QtCore.SIGNAL(self.StatusSignal), StatusStr)
+        else:
+            print StatusStr
+
 
 def ImportMonoScan(Config):
     # First we just need the info about the raw data.

@@ -14,7 +14,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
-from ImportScan import ImportScan
+from ImportScan import ImportScan, ImportScanThread
 import BasicProcessing
 import MultiLaueProcessing
 
@@ -143,31 +143,31 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
                                                      filter='HDF5 files (*.hdf5);;All files (*.*)')
         if FileName != '':
             f, Scan = BasicProcessing.LoadScan(str(FileName))
-        self.h5 = f
-        self.Scan = Scan
-        self.statusBar.showMessage('Opened ' + Scan.attrs['ScanName'] + '.')
+            self.h5 = f
+            self.Scan = Scan
+            self.statusBar.showMessage('Opened ' + Scan.attrs['ScanName'] + '.')
 
-        # Clear all the images and combo boxes.
-        self.canvasSumImage.setImageData(np.zeros((100, 100)))
-        self.canvasTopograph.setImageData(np.zeros((100, 100)))
-        self.canvasSingleImage.setImageData(np.zeros((100, 100)))
-        self.comboSumImage.clear()
-        self.comboTopograph.clear()
-        self.comboSingleImage.clear()
+            # Clear all the images and combo boxes.
+            self.canvasSumImage.setImageData(np.zeros((100, 100)))
+            self.canvasTopograph.setImageData(np.zeros((100, 100)))
+            self.canvasSingleImage.setImageData(np.zeros((100, 100)))
+            self.comboSumImage.clear()
+            self.comboTopograph.clear()
+            self.comboSingleImage.clear()
 
-        # Populate the combobox for the sum image with whatever sum images are in the scan.
-        if 'StDevLogImage' in Scan:
-            self.comboSumImage.addItem('StDev Image Logarithmic', 'StDevLogImage')
-        if 'StDevImage' in Scan:
-            self.comboSumImage.addItem('StDev Image', 'StDevImage')
-        if 'SumLogImage' in Scan:
-            self.comboSumImage.addItem('Sum Image Logarithmic', 'SumLogImage')
-        if 'SumImage' in Scan:
-            self.comboSumImage.addItem('Sum Image', 'SumImage')
+            # Populate the combobox for the sum image with whatever sum images are in the scan.
+            if 'StDevLogImage' in Scan:
+                self.comboSumImage.addItem('StDev Image Logarithmic', 'StDevLogImage')
+            if 'StDevImage' in Scan:
+                self.comboSumImage.addItem('StDev Image', 'StDevImage')
+            if 'SumLogImage' in Scan:
+                self.comboSumImage.addItem('Sum Image Logarithmic', 'SumLogImage')
+            if 'SumImage' in Scan:
+                self.comboSumImage.addItem('Sum Image', 'SumImage')
 
-        # Set the index to the first in the list.
-        self.comboSumImage.setCurrentIndex(0)
-        self.comboSumImage_Changed()
+            # Set the index to the first in the list.
+            self.comboSumImage.setCurrentIndex(0)
+            self.comboSumImage_Changed()
 
     def SaveAggregateImage(self, FileName=None):
         if FileName is None or FileName == False:
@@ -218,13 +218,26 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             self.SaveSingleImage(FileName)
 
     def ImportScan(self):
-        # TODO Move the import scans into a separate thread.
         FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan configuration file.', filter='JSON files (*.json);;All files (*.*)')
 
         if FileName != '':
-            PathName,FileName = os.path.split(str(FileName))
-            ImportScan(FileName, PathName, self.StatusFunc)
-            self.statusBar.showMessage('Import complete.')
+            PathName, FileName = os.path.split(str(FileName))
+
+            # The import can be many minutes long, so spin this off into a thread.
+            self.ImportThread = ImportScanThread(FileName, PathName, "StatusFunc(PyQt_PyObject)")
+            #ImportScan(FileName, PathName, self.StatusFunc)
+
+            # Set up a slot for the thread to update status in the GUI.
+            self.connect(self.ImportThread, QtCore.SIGNAL("StatusFunc(PyQt_PyObject)"), self.StatusFunc)
+
+            # Now start the thread
+            if sys.gettrace() is None:
+                print 'Starting thread.'
+                self.ImportThread.start()
+            else:
+                # Don't use a thread when debugging.  Just call the method directly.
+                self.ImportThread.run()
+
 
     def ProcessMultiLaue(self):
         FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.',
@@ -274,9 +287,9 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         # When doing loops (like during imports) we get hundreds or thousands of status updates and the GUI doesn't get
         # updated until the loop is done.  So we need to tell the GUI to update every N status messages.
         # If N = 1, then we are updating the status too much and use up all our CPU just writing status messages...
-        if self.statusIndex % 10 == 0:
-            QtGui.QApplication.processEvents()
-        self.statusIndex += 1
+        #if self.statusIndex % 10 == 0:
+            #QtGui.QApplication.processEvents()
+        #self.statusIndex += 1
 
     def DoubleClickEvent(self, Canvas, Coord):
         self.statusBar.showMessage('Selected: (x,y)=(%d,%d), value=%g' % Coord)
