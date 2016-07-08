@@ -504,7 +504,12 @@
             ]
         ], 
         "NumberOfPositions": 4, 
-        "FilterDensity": 2.2
+        "FilterDensities": [
+            0, 
+            2.2, 
+            2.2, 
+            2.2
+        ]
     }, 
     "RawScanInfo": {
         "FileNameFormat": "GRA95229_mLaue2_%02d_%05d.tif", 

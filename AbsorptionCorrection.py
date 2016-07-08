@@ -59,10 +59,40 @@ def GetAbsorptionCurve(E, WtPct, rho):
 #    title(['Absorption curve, rho = ' num2str(rho) ' '])
 #    axis([30, E(length(E)), min(A), max(A)*2]);
 
-def DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength, Takeoff=90):
-    # Get the vector describing the attenuation length as a function of energy.
-    """DoAbsorption(E0, E, Iin, WtPct, rho, AbsorptionLength):
+def DoAbsorptionFilter(E, Iin, WtPct, rho, AbsorptionLength, Takeoff=90):
+    """Compute the absorption of photons transmitted through a filter:
+    :param E: (E, Iin) are an (abscissa,ordinate) pair.  E in eV.
+    :param Iin: I is in counts or intensity.
+    :param WtPct: One based vector of length pb.MAXELEMENT with the wt % of each element in the absorber.
+    :param rho: Density in g/cm3 of the absorber
+    :param AbsorptionLength: Distance travelled through the absorber
+    :return: I after absorbing Iin.
+    """
 
+    AbsorptionCurve = GetAbsorptionCurve(E, WtPct, rho)
+    murho = 1/AbsorptionCurve
+
+    # Takeoff coefficient
+    TakeoffCoeff = sin(Takeoff*pi/180)
+
+    # Beer's law.
+    #    I = nan_to_num(Iin*exp(-1.*AbsorptionLength/AbsorptionCurve))
+    #    I = nan_to_num(Iin*exp(-1.*AbsorptionLength*TakeoffCoeff/AbsorptionCurve))
+    if AbsorptionLength >= 0:
+        # If AbsorptionLength is positive, then it means we start with I0 and compute I after being absorbed by AbsorptionLength.
+        I = nan_to_num(Iin*exp(-1.*AbsorptionLength*TakeoffCoeff/AbsorptionCurve))
+    else:
+        # If negative, it means we have I and want to figure out what I0 was before being absorbed.
+        I = nan_to_num(Iin*exp(-1.*AbsorptionLength*TakeoffCoeff/AbsorptionCurve))
+        raise NotImplementedError("Negative absorption lengths not yet tested")
+
+    # Return the modified intensity after absorption.
+    return I
+
+
+def DoAbsorptionTEM(E, Iin, WtPct, rho, AbsorptionLength, Takeoff=90):
+    """Compute the absorption of photons emitted in a TEM sample i.e. homogenously emitted from the entire thickness
+    of the sample, but absorbed on their way out:
     :param E: (E, Iin) are an (abscissa,ordinate) pair.  E in eV.
     :param Iin: I is in counts or intensity.
     :param WtPct: One based vector of length pb.MAXELEMENT with the wt % of each element in the absorber.
@@ -97,41 +127,41 @@ def DoAbsorption(E, Iin, WtPct, rho, AbsorptionLength, Takeoff=90):
     # Return the modified intensity after absorption.
     return I
     
-def CorrectDetectorProperties(E0, E, Iin, DetectorC, DetectorO, DetectorWindowAbsorptionLength, DetectorSiAbsorptionLength, DetectorThickness, GoldThickness):
+def CorrectDetectorProperties(E, Iin, DetectorC, DetectorO, DetectorWindowAbsorptionLength, DetectorSiAbsorptionLength, DetectorThickness, GoldThickness):
     
     # First the thin film window.
-    WtPct = zeros(101);
-    WtPct[pb.C] = DetectorC #75;
-    WtPct[pb.O] = DetectorO #25;
+    WtPct = zeros(pb.MAXELEMENT);
+    WtPct[pb.C-1] = DetectorC #75;
+    WtPct[pb.O-1] = DetectorO #25;
     rho = 1;
     #AbsorptionLength = 0.05;
-    I = DoAbsorption(E0, E, Iin, WtPct, rho, DetectorWindowAbsorptionLength);
+    I = DoAbsorptionFilter(E, Iin, WtPct, rho, DetectorWindowAbsorptionLength);
 
 #    # First the thin film window.
-#    WtPct = zeros(101);
-#    WtPct[pb.Al] = DetectorC #75;
-#    WtPct[pb.N] = DetectorO #25;
+#    WtPct = zeros(pb.MAXELEMENT);
+#    WtPct[pb.Al-1] = DetectorC #75;
+#    WtPct[pb.N-1] = DetectorO #25;
 #    rho = 4;
 #    #AbsorptionLength = 0.05;
-#    I = DoAbsorption(E0, E, Iin, WtPct, rho, DetectorWindowAbsorptionLength);
+#    I = DoAbsorption(E, Iin, WtPct, rho, DetectorWindowAbsorptionLength);
 
     # Now the Au coating.
-    WtPct = zeros(101);
-    WtPct[pb.Pt] = 100;
-    WtPct[pb.Pd] = 100;
+    WtPct = zeros(pb.MAXELEMENT);
+    WtPct[pb.Pt-1] = 100;
+    WtPct[pb.Pd-1] = 100;
     rho = 19.3;
     #AbsorptionLength = 0.06;
-    I = DoAbsorption(E0, E, I, WtPct, rho, GoldThickness);
+    I = DoAbsorptionFilter(E, I, WtPct, rho, GoldThickness);
     
     # Now the Si Detector.
-    WtPct = zeros(101);
-    WtPct[pb.Si] = 100;
+    WtPct = zeros(pb.MAXELEMENT);
+    WtPct[pb.Si-1] = 100;
     rho = 2.65;
     #AbsorptionLength = 0.06;
-    I = DoAbsorption(E0, E, I, WtPct, rho, DetectorSiAbsorptionLength);
+    I = DoAbsorptionFilter(E, I, WtPct, rho, DetectorSiAbsorptionLength);
 
     # And account for the fact that the detector is not infinitely thick.
-    Itrans = DoAbsorption(E0, E, I, WtPct, rho, DetectorThickness)
+    Itrans = DoAbsorptionFilter(E, I, WtPct, rho, DetectorThickness)
     I -= Itrans;
     
     return I

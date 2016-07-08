@@ -182,10 +182,14 @@ def GetSingleImageFromTopographCoordinate(Scan, Coord):
 
     if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
         SingleImage = Cube[Coord[0], Coord[1], :, :]
+        EnergyImage = None
+        EnergyFitImage = None
     elif Scan.attrs['ScanType'] == 'MultiLaue':
         SingleImage = Cube[Coord[0], Coord[1], :, :, 0]
+        EnergyImage = Scan['EnergyCube'][Coord[0], Coord[1], :, :]
+        EnergyFitImage = Scan['EnergyFitValCube'][Coord[0], Coord[1], :, :]
 
-    return SingleImage
+    return SingleImage, EnergyImage, EnergyFitImage
 
 if __name__ == '__main__':
 

@@ -80,7 +80,7 @@ def WriteExampleMultiLaueConfigFile():
 
     FilterInfo = {'NumberOfPositions': 4,
                   'FilterThicknesses': [0, 112, 222, 334], # Microns
-                  'FilterDensity': 2.2, # g/cc
+                  'FilterDensities': [0, 2.2, 2.2, 2.2], # g/cc
                   'FilterWtPcts': [WtPct, WtPct, WtPct, WtPct]
                   }
 
@@ -186,13 +186,13 @@ def ImportMonoScan(Config):
 
     # Now make the sum image (and log of the sum image) from the Cube.
     Sum, SumLog = BasicProcessing.MakeSumImage(Scan, Config['StatusFunc'])
-    Scan.create_dataset('SumImage', data=Sum)
-    Scan.create_dataset('SumLogImage', data=SumLog)
+    Scan.create_dataset('SumImage', data=Sum, dtype='float32')
+    Scan.create_dataset('SumLogImage', data=SumLog, dtype='float32')
 
     # And a stdev image.
     StDev, StDevLog = BasicProcessing.MakeStDevImage(Scan, Config['StatusFunc'])
-    Scan.create_dataset('StDevImage', data=StDev)
-    Scan.create_dataset('StDevLogImage', data=StDevLog)
+    Scan.create_dataset('StDevImage', data=StDev, dtype='float32')
+    Scan.create_dataset('StDevLogImage', data=StDevLog, dtype='float32')
 
     h5.close()
 
@@ -259,13 +259,13 @@ def ImportLaueScan(Config):
 
     # Now make the sum image (and log of the sum image) from the Cube.
     Sum, SumLog = BasicProcessing.MakeSumImage(Scan, Config['StatusFunc'])
-    Scan.create_dataset('SumImage', data=Sum)
-    Scan.create_dataset('SumLogImage', data=SumLog)
+    Scan.create_dataset('SumImage', data=Sum, dtype='float32')
+    Scan.create_dataset('SumLogImage', data=SumLog, dtype='float32')
 
     # And a stdev image.
     StDev, StDevLog = BasicProcessing.MakeStDevImage(Scan, Config['StatusFunc'])
-    Scan.create_dataset('StDevImage', data=StDev)
-    Scan.create_dataset('StDevLogImage', data=StDevLog)
+    Scan.create_dataset('StDevImage', data=StDev, dtype='float32')
+    Scan.create_dataset('StDevLogImage', data=StDevLog, dtype='float32')
 
     h5.close()
 
@@ -287,6 +287,15 @@ def ImportMultiLaueScan(Config):
     # The Calibration section of the config file is the attributes for the calibration.
     for k,v in Config['Calibration'].items():
         Calibration.attrs[k] = v
+
+    # Add the filter group (MultiLaue only).
+    Filter = Scan.create_group('Filter')
+    for k,v in Config['FilterInfo'].items():
+        if k == 'FilterWtPcts':
+            WtPcts = np.array(v)
+            FilterWtPcts = Filter.create_dataset('FilterWtPcts', data=WtPcts)
+        else:
+            Filter.attrs[k] = v
 
     # Now make the data cube.  For MultiLaue this is 5D: x,y stage,  x,y image by # filters.
     CubeShape = (Config['ScanInfo']['xPixels'], Config['ScanInfo']['yPixels'], Config['Calibration']['xPixels'],
@@ -337,13 +346,13 @@ def ImportMultiLaueScan(Config):
 
     # Now make the sum image (and log of the sum image) from the Cube.
     Sum, SumLog = BasicProcessing.MakeSumImage(Scan, Config['StatusFunc'])
-    Scan.create_dataset('SumImage', data=Sum)
-    Scan.create_dataset('SumLogImage', data=SumLog)
+    Scan.create_dataset('SumImage', data=Sum, dtype='float32')
+    Scan.create_dataset('SumLogImage', data=SumLog, dtype='float32')
 
     # And a stdev image.
     StDev, StDevLog = BasicProcessing.MakeStDevImage(Scan, Config['StatusFunc'])
-    Scan.create_dataset('StDevImage', data=StDev)
-    Scan.create_dataset('StDevLogImage', data=StDevLog)
+    Scan.create_dataset('StDevImage', data=StDev, dtype='float32')
+    Scan.create_dataset('StDevLogImage', data=StDevLog, dtype='float32')
 
     h5.close()
 

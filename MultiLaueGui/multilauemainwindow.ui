@@ -134,8 +134,14 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="action_Import_Scan"/>
     <addaction name="action_Open_Scan"/>
+    <addaction name="actionSave_Aggregate_Image"/>
+    <addaction name="actionSave_Topograph_Image"/>
+    <addaction name="actionSave_Single_Image"/>
+    <addaction name="actionSave_All_Three_Images"/>
+    <addaction name="separator"/>
+    <addaction name="action_Import_Scan"/>
+    <addaction name="actionProcess_MultiLaue"/>
    </widget>
    <addaction name="menu_File"/>
   </widget>
@@ -146,20 +152,86 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="action_Open_Scan"/>
+   <addaction name="actionSave_Aggregate_Image"/>
+   <addaction name="actionSave_Topograph_Image"/>
+   <addaction name="actionSave_Single_Image"/>
+   <addaction name="actionSave_All_Three_Images"/>
+   <addaction name="separator"/>
+   <addaction name="action_Import_Scan"/>
+   <addaction name="actionProcess_MultiLaue"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="action_Import_Scan">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/Icons/Import</normaloff>:/Icons/Import</iconset>
+   </property>
    <property name="text">
     <string>&amp;Import Scan</string>
    </property>
   </action>
   <action name="action_Open_Scan">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/Icons/Open</normaloff>:/Icons/Open</iconset>
+   </property>
    <property name="text">
     <string>&amp;Open Scan</string>
    </property>
   </action>
+  <action name="actionProcess_MultiLaue">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/Icons/Compute</normaloff>:/Icons/Compute</iconset>
+   </property>
+   <property name="text">
+    <string>Process &amp;MultiLaue</string>
+   </property>
+  </action>
+  <action name="actionSave_Aggregate_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/Icons/Save Aggregate</normaloff>:/Icons/Save Aggregate</iconset>
+   </property>
+   <property name="text">
+    <string>Save Aggregate Image</string>
+   </property>
+  </action>
+  <action name="actionSave_Topograph_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/Icons/Save Topograph</normaloff>:/Icons/Save Topograph</iconset>
+   </property>
+   <property name="text">
+    <string>Save Topograph Image</string>
+   </property>
+   <property name="toolTip">
+    <string>Save Topograph Image</string>
+   </property>
+  </action>
+  <action name="actionSave_Single_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/Icons/Save Single</normaloff>:/Icons/Save Single</iconset>
+   </property>
+   <property name="text">
+    <string>Save Single Image</string>
+   </property>
+  </action>
+  <action name="actionSave_All_Three_Images">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/Icons/Save</normaloff>:/Icons/Save</iconset>
+   </property>
+   <property name="text">
+    <string>Save All Three Images</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

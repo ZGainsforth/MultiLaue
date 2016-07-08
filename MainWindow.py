@@ -6,6 +6,7 @@ os.environ['QT_API'] = 'pyqt'
 import numpy as np
 from MultiLaueGUI import Ui_MultiLaueMainWindow
 from PyQt4 import QtGui, QtCore
+from skimage.external.tifffile import imsave
 
 import matplotlib
 matplotlib.use('Qt4Agg')
@@ -15,6 +16,7 @@ from matplotlib.figure import Figure
 
 from ImportScan import ImportScan
 import BasicProcessing
+import MultiLaueProcessing
 
 class MplCanvas(FigureCanvas, QtGui.QWidget):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
@@ -54,8 +56,11 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         return QtCore.QSize(100,100)
 
     def setImageData(self, ImageData):
-        self.ImageData = ImageData
-        self.axes.imshow(self.ImageData[:].T, interpolation='none', cmap='gray')
+        # Get the numpy array from the HDF5 object, transpose it for the correct orientation on the screen, get rids of nans,
+        # and change any negative infinities to zero (happens in the log images).
+        self.ImageData = ImageData[:].T
+        self.ImageData[self.ImageData == -np.inf] = 0
+        self.axes.imshow(self.ImageData, interpolation='none', cmap='gray')
         #self.fig.tight_layout()
         self.draw()
 
@@ -67,7 +72,7 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         # Single clicks occur when dragging and zooming.  So double click is used to select a point.
         if click.dblclick == True:
             # Get the Z value here.
-            z = self.ImageData[int(click.xdata+0.5), int(click.ydata+0.5)]
+            z = self.ImageData[int(click.ydata+0.5), int(click.xdata+0.5)]
             self.MouseDblClickedCoord = (click.xdata, click.ydata, z)
             self.parent.DoubleClickEvent(self, self.MouseDblClickedCoord)
             return self.MouseDblClickedCoord
@@ -117,8 +122,13 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.statusIndex = 0
 
         # Connect menu actions
-        self.action_Import_Scan.triggered.connect(self.ImportScan)
         self.action_Open_Scan.triggered.connect(self.OpenScan)
+        self.actionSave_Aggregate_Image.triggered.connect(self.SaveAggregateImage)
+        self.actionSave_Topograph_Image.triggered.connect(self.SaveTopographImage)
+        self.actionSave_Single_Image.triggered.connect(self.SaveSingleImage)
+        self.actionSave_All_Three_Images.triggered.connect(self.SaveThreeImages)
+        self.action_Import_Scan.triggered.connect(self.ImportScan)
+        self.actionProcess_MultiLaue.triggered.connect(self.ProcessMultiLaue)
 
         # Connect the combo boxes to their images.
         self.comboSumImage.currentIndexChanged.connect(self.comboSumImage_Changed)
@@ -127,14 +137,6 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
 
     def GetSingleImageCanvas(self):
         return self.canvasSingleImage
-
-    def ImportScan(self):
-        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan configuration file.', filter='JSON files (*.json);;All files (*.*)')
-
-        if FileName != '':
-            PathName,FileName = os.path.split(str(FileName))
-            ImportScan(FileName, PathName, self.StatusFunc)
-            self.statusBar.showMessage('Import complete.')
 
     def OpenScan(self):
         FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.',
@@ -167,6 +169,83 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.comboSumImage.setCurrentIndex(0)
         self.comboSumImage_Changed()
 
+    def SaveAggregateImage(self, FileName=None):
+        if FileName is None or FileName == False:
+            # Set the default filename to the type of image (SumImage, etc...)
+            FileName = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString()) + '.tif'
+            Opts = QtGui.QFileDialog.Option(0x40) #QtGui.QFileDialog.HideNameFilterDetails
+            FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
+                                                        filter='TIF image (*.tif);;All files(*.*)', options=Opts)
+        if FileName != '':
+            imsave(FileName, self.canvasSumImage.ImageData[:].astype('float32'))
+
+    def SaveTopographImage(self, FileName=None):
+        if FileName is None or FileName == False:
+            # Set the default filename to the type of image (SumImage, etc...)
+            FileName = 'Topograph.tif'
+            Opts = QtGui.QFileDialog.Option(0x40) #QtGui.QFileDialog.HideNameFilterDetails
+            FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save Topograph Image.', directory=FileName,
+                                                        filter='TIF image (*.tif);;All files(*.*)', options=Opts)
+        if FileName != '':
+            imsave(FileName, self.canvasTopograph.ImageData[:].astype('float32'))
+
+    def SaveSingleImage(self, FileName=None):
+        if FileName is None or FileName == False:
+            # Set the default filename to the type of image (SumImage, etc...)
+            FileName = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString()) + '.tif'
+            Opts = QtGui.QFileDialog.Option(0x40) #QtGui.QFileDialog.HideNameFilterDetails
+            FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
+                                                        filter='TIF image (*.tif);;All files(*.*)', options=Opts)
+        if FileName != '':
+            imsave(FileName, self.canvasSingleImage.ImageData[:].astype('float32'))
+
+    def SaveThreeImages(self):
+        FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save All Three Images.',
+                                                     filter='TIF image (*.tif);;All files(*.*)')
+
+        if FileName != '':
+            AggregateName = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString())
+            SingleName = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString())
+
+            FileRoot, FileExt = os.path.splitext(str(FileName))
+            FileName = FileRoot + AggregateName + FileExt
+            self.SaveAggregateImage(FileName)
+
+            FileName = FileRoot + 'Topograph' + FileExt
+            self.SaveTopographImage(FileName)
+
+            FileName = FileRoot + SingleName + FileExt
+            self.SaveSingleImage(FileName)
+
+    def ImportScan(self):
+        # TODO Move the import scans into a separate thread.
+        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan configuration file.', filter='JSON files (*.json);;All files (*.*)')
+
+        if FileName != '':
+            PathName,FileName = os.path.split(str(FileName))
+            ImportScan(FileName, PathName, self.StatusFunc)
+            self.statusBar.showMessage('Import complete.')
+
+    def ProcessMultiLaue(self):
+        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.',
+                                                     filter='HDF5 files (*.hdf5);;All files (*.*)')
+
+        if FileName != '':
+            # Make a separate thread for this because this can be an hours-long process.
+            self.MultiLaueThread = MultiLaueProcessing.ProcessMultiLaueThread(str(FileName), "StatusFunc(PyQt_PyObject)")
+
+            # Set up a slot for the thread to update status in the GUI.
+            self.connect(self.MultiLaueThread, QtCore.SIGNAL("StatusFunc(PyQt_PyObject)"), self.StatusFunc)
+
+            # Now start the thread
+            if sys.gettrace() is None:
+                print 'Starting thread.'
+                self.MultiLaueThread.start()
+            else:
+                # Don't use a thread when debugging.  Just call the method directly.
+                self.MultiLaueThread.run()
+
+
     def comboSumImage_Changed(self):
         WhichImage = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString())
         if WhichImage == '':
@@ -184,6 +263,10 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             self.canvasSingleImage.setImageData(self.SingleImageRawData)
         if WhichImage == 'Logarithmic':
             self.canvasSingleImage.setImageData(np.log(self.SingleImageRawData))
+        if WhichImage == 'Energy':
+            self.canvasSingleImage.setImageData(self.EnergyImageRawData)
+        if WhichImage == 'EnergyFit':
+            self.canvasSingleImage.setImageData(self.EnergyFitImageRawData)
 
     def StatusFunc(self, StatusStr):
         # The status is ALWAYS written to the status bar.
@@ -205,16 +288,25 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             self.statusBar.showMessage('Generated topograph from coordinate (x,y)=(%d,%d)' % Coord[0:2])
         if Canvas == self.canvasTopograph:
             # If the user clicked on a topograph pixel, then get the diffraction pattern from that pixel.
-            SingleImage = BasicProcessing.GetSingleImageFromTopographCoordinate(self.Scan, Coord)
+            SingleImage, EnergyImage, EnergyFitImage = BasicProcessing.GetSingleImageFromTopographCoordinate(self.Scan, Coord)
             self.SingleImageRawData = SingleImage
+            self.EnergyImageRawData = EnergyImage
+            self.EnergyFitImageRawData = EnergyFitImage
 
             # Clear out any old image from the single image and combo box.
             self.canvasSingleImage.setImageData(np.zeros((100, 100)))
             self.comboSingleImage.clear()
 
-            # Repopulate the combo box with linear and log options.
-            self.comboSingleImage.addItem('Logarithmic', 'Logarithmic')
-            self.comboSingleImage.addItem('Linear', 'Linear')
+            if self.Scan.attrs['ScanType'] == 'MultiLaue':
+                # Repopulate the combo box with linear and log options.
+                self.comboSingleImage.addItem('Energy', 'Energy')
+                self.comboSingleImage.addItem('Energy Fit', 'EnergyFit')
+                self.comboSingleImage.addItem('Laue Logarithmic', 'Logarithmic')
+                self.comboSingleImage.addItem('Laue Linear', 'Linear')
+            else:
+                # Repopulate the combo box with linear and log options.
+                self.comboSingleImage.addItem('Logarithmic', 'Logarithmic')
+                self.comboSingleImage.addItem('Linear', 'Linear')
 
             # And select the first option.
             self.comboSingleImage.setCurrentIndex(0)

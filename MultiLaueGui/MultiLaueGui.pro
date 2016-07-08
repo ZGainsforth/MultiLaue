@@ -18,3 +18,6 @@ SOURCES += main.cpp \
 HEADERS  += multilauemainwindow.h
 
 FORMS    += multilauemainwindow.ui
+
+RESOURCES += \
+    icons.qrc
