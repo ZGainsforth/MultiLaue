@@ -28,6 +28,10 @@ Flux /= max(Flux)
 # For debug, quiet = False.  Set True for live time and it won't print out plots showing the algorithm progressing.
 quiet = True
 
+# If there are fewer counts in the pixels than this number, then we won't compute an energy for that spot.  This saves
+# computation time and results in more useful images (since they don't have a bunch of noisy "computed" pixels.
+StatisticallySignificantCountsThreshhold = 2500
+
 def ComputeAbsorbedBeamlineFlux(WtPct, rho, t, NumFilters):
 
     assert (WtPct.shape[0] == NumFilters), "WtPct must have the same dimension as there are filter positions."
@@ -107,7 +111,7 @@ def ComputeSpotEnergy(I, BeamlineRatioSpectra):
     # rho is the filter density (g/cm3) it is assumed that all filters have the same density.
     # t is the thickness of the filters -- it should have the same length as I.
 
-    assert (len(I) == BeamlineRatioSpectra.shape[0]), "I must same number of intensities as beamline ratio spectra."
+    assert (len(I) == BeamlineRatioSpectra.shape[0]), "I vector must have the same number of values as there are beamline ratio spectra."
 
     # Now compute the ratio intensities measured.
     Iratio = I.copy().astype('float')
@@ -134,63 +138,17 @@ def ComputeSpotEnergy(I, BeamlineRatioSpectra):
     ind = np.argmin(FitVal)
     return E[ind], FitVal[ind]
 
-def ComputeEnergyImageSlow(I, BeamlineRatioSpectra):
-    # I is a numpy array with I0, I1, I2, etc. where I1+ are the filtered intensities.
-    # WtPct is the filter composition. (It is assumed that all filters have the same composition.
-    # rho is the filter density (g/cm3) it is assumed that all filters have the same density.
-    # t is the thickness of the filters -- it should have the same length as I.
-
-    assert (I.shape[-1] == BeamlineRatioSpectra.shape[0]), "I have the same number of images as beamline ratio spectra."
-
-    NumFrames = I.shape[-1]
-
-    # Now compute the ratio intensities measured.
-    Iratio = I.copy().astype('float')
-    # Ratio each frame to the first...
-    for n in range(1, NumFrames):
-        Iratio[:, :, n] /= Iratio[:, :, 0]
-    # ... and set the first to unity.
-    Iratio[:, :, 0] = 1
-    if not quiet:
-        print Iratio
-
-    EImage = np.zeros((I.shape[0], I.shape[1]))
-    FitImage = np.zeros((I.shape[0], I.shape[1]))
-
-    for m in range(I.shape[0]):
-        print m
-        # And compare them against the apparent intensity ratio curves.
-        # Shape of RatioComparison is one row of the image x number of filters x number of energies.
-        RatioComparison = Iratio[m, :, :, np.newaxis]-BeamlineRatioSpectra
-        FitVal = np.std(RatioComparison, axis=1)
-        # if not quiet:
-        #     plt.figure()
-        #     plt.plot(E, FitVal)
-        #     plt.hold(True)
-        #     print RatioComparison.shape
-        #     for i in range(len(I)):
-        #         plt.plot(E, RatioComparison[i,:])
-        #     plt.title('Fit energy')
-        #     plt.legend(['Best Fit'] + [str(i) for i in range(len(I))])
-        #
-        #     # Print the best fit energy
-        #     print "Best fit energy is %g eV with fit value %g" % (E[np.argmin(FitVal)], FitVal[np.argmin(FitVal)])
-
-        inds = np.argmin(FitVal, axis=-1)
-        EImage[m,:] = E[inds]
-        FitImage[m,:] = np.diag(FitVal[:,inds])
-
-    return EImage, FitImage
-
-def ComputeEnergyImage(I, BeamlineApparentRatioSpectra, x):
+def ComputeEnergyImage(I, BeamlineApparentRatioSpectra):
 
     # Make a numpy array for the energy image and the fit image.  When they are done, we plunk them into the HDF5.
     EVec = np.zeros(I.shape[0:2])
     FitVec = np.zeros(I.shape[0:2])
 
     for m in range(I.shape[0]):
-        #print x,m
         for n in range(I.shape[1]):
+            # Skip this pixel if any of the filtered images has too few counts to produce a good fit.
+            if np.min(I[m, n, :]) < StatisticallySignificantCountsThreshhold:
+                continue
             EVec[m,n], FitVec[m,n] = ComputeSpotEnergy(I[m, n, :], BeamlineApparentRatioSpectra)
 
     return EVec, FitVec
@@ -225,9 +183,6 @@ def MakeMultiLaueEnergyCube(Scan, StatusFunc=None):
 
     BeamlineFilteredSpectra, BeamlineApparentSpectra, BeamlineApparentRatioSpectra = ComputeAbsorbedBeamlineFlux(WtPcts, FilterDensities, FilterThicknesses, NumPositions)
 
-    # # Make a temp numpy array for the energy image and the fit image.  When they are done, we plunk them into the HDF5.
-    # EVec = np.zeros((Cube.shape[2], Cube.shape[3]))
-    # FitVec = np.zeros((Cube.shape[2], Cube.shape[3]))
     # Create an array (same size as one row in the topograph) to contain the results passed back by the multiprocessing.
     # Multiprocessing will do one row of the topograph at a time.
     Result = np.ndarray((Cube.shape[0]), dtype=object)
@@ -237,45 +192,26 @@ def MakeMultiLaueEnergyCube(Scan, StatusFunc=None):
         p = Pool()
 
         StatusStr = "Energy image: line %d, Pixels # %d-%d of %d (this may take a few minutes)" % (
-        y, y * Cube.shape[0] + 1, (y+1) * Cube.shape[0] + 1, Cube.shape[0] * Cube.shape[1])
+        y, y * Cube.shape[0] + 1, (y+1) * Cube.shape[0], Cube.shape[0] * Cube.shape[1])
         if StatusFunc is not None:
             StatusFunc(StatusStr)
         else:
             print StatusStr
 
         for x in range(Cube.shape[0]):
-
-            # Compute one Energy image and its fit image.
-
             # Get all the Laues for this image from the HDF5 at once.
             I = Cube[x, y, :, :, :]
-            # EVec, FitVec = ComputeEnergyImage(I, BeamlineApparentRatioSpectra)
 
-            # for m in range(Cube.shape[2]):
-            #     print m
-            #     for n in range(Cube.shape[3]):
-            #         EVec[m,n], FitVec[m,n] = ComputeSpotEnergy(I[m, n, :], BeamlineApparentRatioSpectra)
+            # Compute one Energy image and its fit image.
+            Result[x] = p.apply_async(ComputeEnergyImage, [I, BeamlineApparentRatioSpectra])
 
-            Result[x] = p.apply_async(ComputeEnergyImage, [I, BeamlineApparentRatioSpectra, x])
-            #ComputeEnergyImage(I, BeamlineApparentRatioSpectra, x)
-
-            # for m in range(Cube.shape[2]):
-            #     print m
-            #     for n in range(Cube.shape[3]):
-            #         EVec[m,n], FitVec[m,n] = Result[m,n].get()
-            #
-            # # Fill out this frame in the HDF5 cubes.
-            # EnergyCube[x, y, :, :] = EVec
-            # EnergyFitValCube[x, y, :, :] = FitVec
-            # break
-
+        # After one row of pixels, close down the asynchronous pool and let it process those.
         p.close()
         p.join()
 
-        # Read the results from that multiprocess pool into the HDF5 file and we'll go around for the next line.
+        # Stash the results from that multiprocess pool into the HDF5 file and we'll go around for the next line.
         for x in range(Cube.shape[0]):
             EnergyCube[x, y, :, :], EnergyFitValCube[x, y, :, :] = Result[x].get()
-
 
     return
 
@@ -291,7 +227,7 @@ class ProcessMultiLaueThread(QtCore.QThread):
         f, Scan = LoadScan(self.FileName, readwrite=True)
         self.StatusFunc('Opened ' + Scan.attrs['ScanName'] + '.')
 
-        EnergyCube = MakeMultiLaueEnergyCube(Scan, self.StatusFunc)
+        MakeMultiLaueEnergyCube(Scan, self.StatusFunc)
         f.close()
         self.StatusFunc('MultiLaue processing complete.')
 
@@ -302,40 +238,13 @@ class ProcessMultiLaueThread(QtCore.QThread):
             print StatusStr
 
 
-# def ProcessMultiLaue(FileName, StatusFunc=None):
-#
-#     # Set up a timer which will keep the GUI responsive for the user
-#     t = QtCore.QTimer()
-#     t.timeout.connect(KeepQtAlive)
-#     t.start(1000)
-#
-#     f, Scan = LoadScan(FileName, readwrite=True)
-#     if StatusFunc is not None:
-#         StatusFunc('Opened ' + Scan.attrs['ScanName'] + '.')
-#     else:
-#         print 'Opened ' + Scan.attrs['ScanName'] + '.'
-#
-#     EnergyCube = MakeMultiLaueEnergyCube(Scan, StatusFunc)
-#     f.close()
-#
-#     if StatusFunc is not None:
-#         StatusFunc('Multilaue processing complete')
-#     else:
-#         print 'Multilaue processing complete'
-#
-#     t.stop()
-#
-# def KeepQtAlive():
-#     print 'KeepQtAlive!'
-#     QtGui.QApplication.processEvents()
-
 if __name__ == '__main__':
 
     tStart = time.time()
     #f, Scan = LoadScan('GRA95229_mLaue_7.hdf5', readwrite=True)
     f, Scan = LoadScan('GRA95229_mLaue2.hdf5', readwrite=True)
+    f, Scan = LoadScan('Si Hyperlaue/SiHyperlaueFinal_Shielded_Extract.hdf5', readwrite=True)
     EnergyCube = MakeMultiLaueEnergyCube(Scan)
     #Scan.create_dataset('EnergyCube', data=EnergyCube)
     f.close()
-
     print time.time() - tStart

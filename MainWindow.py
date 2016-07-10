@@ -47,7 +47,7 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         x = np.linspace(1, 10, 30)
         #self.axes.plot(x, np.sin(x))
         self.axes.imshow(self.ImageData.T, interpolation='none', cmap='gray')
-        self.axes.text(35,55, 'No data', color='white')
+        #self.axes.text(35,55, 'No data', color='white')
 
     def sizeHint(self):
         return QtCore.QSize(300,300)
@@ -59,7 +59,8 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         # Get the numpy array from the HDF5 object, transpose it for the correct orientation on the screen, get rids of nans,
         # and change any negative infinities to zero (happens in the log images).
         self.ImageData = ImageData[:].T
-        self.ImageData[self.ImageData == -np.inf] = 0
+        self.ImageData[np.isinf(self.ImageData)] = 0
+        self.ImageData = np.nan_to_num(self.ImageData)
         self.axes.imshow(self.ImageData, interpolation='none', cmap='gray')
         #self.fig.tight_layout()
         self.draw()
@@ -129,6 +130,8 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.actionSave_All_Three_Images.triggered.connect(self.SaveThreeImages)
         self.action_Import_Scan.triggered.connect(self.ImportScan)
         self.actionProcess_MultiLaue.triggered.connect(self.ProcessMultiLaue)
+        self.actionClose.triggered.connect(self.CloseScan)
+        self.actionOpen_GitHub_Website.triggered.connect(self.OpenGitHub)
 
         # Connect the combo boxes to their images.
         self.comboSumImage.currentIndexChanged.connect(self.comboSumImage_Changed)
@@ -139,6 +142,28 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.ImportThread = None
         self.MultiLaueThread = None
 
+    def OpenGitHub(self):
+        import webbrowser
+
+        webbrowser.open('https://github.com/ZGainsforth/MultiLaue')
+
+    def CloseScan(self, quiet=False):
+        try:
+            self.h5.close()
+        except:
+            pass
+        self.Scan = None
+        self.h5 = None
+        # Clear all the images and combo boxes.
+        self.canvasSumImage.setImageData(np.zeros((100, 100)))
+        self.canvasTopograph.setImageData(np.zeros((100, 100)))
+        self.canvasSingleImage.setImageData(np.zeros((100, 100)))
+        self.comboSumImage.clear()
+        self.comboTopograph.clear()
+        self.comboSingleImage.clear()
+        if quiet == False:
+            self.statusBar.showMessage('Closed Scan.')
+
     def GetSingleImageCanvas(self):
         return self.canvasSingleImage
 
@@ -146,18 +171,12 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.',
                                                      filter='HDF5 files (*.hdf5);;All files (*.*)')
         if FileName != '':
+            self.CloseScan(quiet=True)
+
             f, Scan = BasicProcessing.LoadScan(str(FileName))
             self.h5 = f
             self.Scan = Scan
             self.statusBar.showMessage('Opened ' + Scan.attrs['ScanName'] + '.')
-
-            # Clear all the images and combo boxes.
-            self.canvasSumImage.setImageData(np.zeros((100, 100)))
-            self.canvasTopograph.setImageData(np.zeros((100, 100)))
-            self.canvasSingleImage.setImageData(np.zeros((100, 100)))
-            self.comboSumImage.clear()
-            self.comboTopograph.clear()
-            self.comboSingleImage.clear()
 
             # Populate the combobox for the sum image with whatever sum images are in the scan.
             if 'StDevLogImage' in Scan:

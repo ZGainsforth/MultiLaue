@@ -142,8 +142,17 @@
     <addaction name="separator"/>
     <addaction name="action_Import_Scan"/>
     <addaction name="actionProcess_MultiLaue"/>
+    <addaction name="separator"/>
+    <addaction name="actionClose"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionOpen_GitHub_Website"/>
    </widget>
    <addaction name="menu_File"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -226,6 +235,16 @@
    </property>
    <property name="text">
     <string>Save All Three Images</string>
+   </property>
+  </action>
+  <action name="actionClose">
+   <property name="text">
+    <string>Close Scan</string>
+   </property>
+  </action>
+  <action name="actionOpen_GitHub_Website">
+   <property name="text">
+    <string>Open GitHub Website</string>
    </property>
   </action>
  </widget>
