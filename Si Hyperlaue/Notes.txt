@@ -1,0 +1,17 @@
+These images were extracted from the ALS 12.3.2 scan from 20151020.
+
+Mapping:
+
+Here  = Original dataset
+00001 = 00015 (No filter)
+00002 = 00041 (One filter)
+00003 = 00076 (Two filters)
+00004 = 00100 (Three filters)
+
+The filters are SiO2 with the following properties:
+
+        t = np.array([0, 112, 222, 334]) # Thickness with 0-3 slips each 100 um thick.
+        rho = 2.2 # g/cm3
+        WtPct = np.zeros(pb.MAXELEMENT)
+        WtPct[pb.Si-1] = 46.74
+        WtPct[pb.O-1] = 53.26
