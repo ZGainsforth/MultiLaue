@@ -9,7 +9,9 @@ mamflux = np.genfromtxt('12.3.2_flux_after extrapolated.txt')
 QuickPlot.SpecPlot(mamflux, title='Whitebeam flux from Matt.', xlabel='eV', ylabel='photons/sec')
 
 whiteflux = np.genfromtxt('whitebeamflux.txt')
-QuickPlot.SpecPlot(whiteflux, title='Whitebeam flux from Nobu.', xlabel='eV', ylabel='photons/sec')
+#QuickPlot.SpecPlot(whiteflux, title='Whitebeam flux from Nobu.', boldlevel=5, xlabel='eV', ylabel='photons/sec')
+whiteflux[:,0] /= 1000
+QuickPlot.SpecPlot(whiteflux, title='ALS 12.3.2 flux.', boldlevel=5, xlabel='keV', ylabel='photons/sec')
 
 def raise_window(figname=None):
     if figname:

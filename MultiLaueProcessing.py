@@ -240,11 +240,13 @@ class ProcessMultiLaueThread(QtCore.QThread):
 
 if __name__ == '__main__':
 
+    quiet = False
     tStart = time.time()
     #f, Scan = LoadScan('GRA95229_mLaue_7.hdf5', readwrite=True)
-    f, Scan = LoadScan('GRA95229_mLaue2.hdf5', readwrite=True)
+    #f, Scan = LoadScan('GRA95229_mLaue2.hdf5', readwrite=True)
     f, Scan = LoadScan('Si Hyperlaue/SiHyperlaueFinal_Shielded_Extract.hdf5', readwrite=True)
     EnergyCube = MakeMultiLaueEnergyCube(Scan)
     #Scan.create_dataset('EnergyCube', data=EnergyCube)
     f.close()
     print time.time() - tStart
+

@@ -7,6 +7,7 @@ import numpy as np
 from MultiLaueGUI import Ui_MultiLaueMainWindow
 from PyQt4 import QtGui, QtCore
 from skimage.external.tifffile import imsave
+import json
 
 import matplotlib
 matplotlib.use('Qt4Agg')
@@ -142,6 +143,31 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.ImportThread = None
         self.MultiLaueThread = None
 
+        #  Read in the defaults file if it exists ,or populate it with defaults.
+        if os.path.exists('MultiLaueDefaults.json'):
+            with open('MultiLaueDefaults.json', 'r') as f:
+                DefaultsStr = f.read()
+
+            self.Defaults = json.loads(DefaultsStr)
+        else:
+            self.Defaults = dict()
+            self.Defaults['DefaultFileDialogDir'] = os.getcwd()
+
+            DefaultsStr = json.dumps(self.Defaults, indent=4)
+
+            with open('MultiLaueDefaults.json', 'w') as f:
+                f.write(DefaultsStr)
+
+
+    def closeEvent(self, event):
+        # Before closing, make sure we write out the defaults to disk.
+        DefaultsStr = json.dumps(self.Defaults, indent=4)
+
+        with open('MultiLaueDefaults.json', 'w') as f:
+            f.write(DefaultsStr)
+
+        event.accept()
+
     def OpenGitHub(self):
         import webbrowser
 
@@ -168,10 +194,16 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         return self.canvasSingleImage
 
     def OpenScan(self):
-        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.',
+
+        # Get the name of the file to open from the user.  Move to the default path (i.e. the last one used by the user) so the dialogs are all staying within the same directory.
+        FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], '*.hdf5')
+        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.', directory=FileName,
                                                      filter='HDF5 files (*.hdf5);;All files (*.*)')
         if FileName != '':
             self.CloseScan(quiet=True)
+
+            # Store the default path now that the user has selected a file.
+            self.Defaults['DefaultFileDialogDir'], _ = os.path.split(str(FileName))
 
             f, Scan = BasicProcessing.LoadScan(str(FileName))
             self.h5 = f
@@ -195,46 +227,68 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
     def SaveAggregateImage(self, FileName=None):
         if FileName is None or FileName == False:
             # Set the default filename to the type of image (SumImage, etc...)
-            FileName = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString()) + '.tif'
+            FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], str((self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString()) + '.tif'))
             Opts = QtGui.QFileDialog.Option(0x40) #QtGui.QFileDialog.HideNameFilterDetails
             FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
                                                         filter='TIF image (*.tif);;All files(*.*)', options=Opts)
         if FileName != '':
+            # Store the default path now that the user has selected a file.
+            self.Defaults['DefaultFileDialogDir'], _ = os.path.split(str(FileName))
+            # Write the image file to disk.
             imsave(FileName, self.canvasSumImage.ImageData[:].astype('float32'))
 
     def SaveTopographImage(self, FileName=None):
         if FileName is None or FileName == False:
             # Set the default filename to the type of image (SumImage, etc...)
-            FileName = 'Topograph.tif'
+            FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()).toString()) + '.tif')
             Opts = QtGui.QFileDialog.Option(0x40) #QtGui.QFileDialog.HideNameFilterDetails
             FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save Topograph Image.', directory=FileName,
                                                         filter='TIF image (*.tif);;All files(*.*)', options=Opts)
         if FileName != '':
+            # Store the default path now that the user has selected a file.
+            self.Defaults['DefaultFileDialogDir'], _ = os.path.split(str(FileName))
+            # Write the image file to disk.
             imsave(FileName, self.canvasTopograph.ImageData[:].astype('float32'))
 
     def SaveSingleImage(self, FileName=None):
         if FileName is None or FileName == False:
             # Set the default filename to the type of image (SumImage, etc...)
-            FileName = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString()) + '.tif'
+            FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString()) + '.tif')
             Opts = QtGui.QFileDialog.Option(0x40) #QtGui.QFileDialog.HideNameFilterDetails
             FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
                                                         filter='TIF image (*.tif);;All files(*.*)', options=Opts)
         if FileName != '':
+            # Store the default path now that the user has selected a file.
+            self.Defaults['DefaultFileDialogDir'], _ = os.path.split(str(FileName))
+            # Write the image file to disk.
             imsave(FileName, self.canvasSingleImage.ImageData[:].astype('float32'))
 
     def SaveThreeImages(self):
-        FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save All Three Images.',
+        try:
+            # The best option is to default naming the images by the scan name.
+            FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], self.Scan.attrs['ScanName']+'_.tif')
+        except:
+            # But if no scan is open right now, then save the user some embarassement.
+            QtGui.QMessageBox.warning(self, 'MultiLaue', 'No scan is open now.  No data to save.',
+                                      QtGui.QMessageBox.NoButton, QtGui.QMessageBox.Warning)
+            return
+
+        FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save All Three Images.', directory=FileName,
                                                      filter='TIF image (*.tif);;All files(*.*)')
 
         if FileName != '':
+            # Store the default path now that the user has selected a file.
+            self.Defaults['DefaultFileDialogDir'], _ = os.path.split(str(FileName))
+
             AggregateName = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString())
+            TopographName = str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()).toString())
             SingleName = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString())
 
             FileRoot, FileExt = os.path.splitext(str(FileName))
             FileName = FileRoot + AggregateName + FileExt
             self.SaveAggregateImage(FileName)
 
-            FileName = FileRoot + 'Topograph' + FileExt
+            FileName = FileRoot + TopographName + FileExt
             self.SaveTopographImage(FileName)
 
             FileName = FileRoot + SingleName + FileExt
@@ -248,10 +302,12 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
                                       QtGui.QMessageBox.NoButton, QtGui.QMessageBox.Warning)
             return
 
-        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan configuration file.', filter='JSON files (*.json);;All files (*.*)')
+        FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], '*.json')
+        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan configuration file.', directory=FileName, filter='JSON files (*.json);;All files (*.*)')
 
         if FileName != '':
             PathName, FileName = os.path.split(str(FileName))
+            self.Defaults['DefaultFileDialogDir'] = PathName
 
             # The import can be many minutes long, so spin this off into a thread.
             self.ImportThread = ImportScanThread(FileName, PathName, "StatusFunc(PyQt_PyObject)")
@@ -280,10 +336,14 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
                                       QtGui.QMessageBox.NoButton, QtGui.QMessageBox.Warning)
             return
 
-        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.',
+        FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], '*.hdf5')
+        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.', directory=FileName,
                                                      filter='HDF5 files (*.hdf5);;All files (*.*)')
 
         if FileName != '':
+            # Store the default path now that the user has selected a file.
+            self.Defaults['DefaultFileDialogDir'], _ = os.path.split(str(FileName))
+
             # Make a separate thread for this because this can be an hours-long process.
             self.MultiLaueThread = MultiLaueProcessing.ProcessMultiLaueThread(str(FileName), "StatusFunc(PyQt_PyObject)")
 
@@ -309,7 +369,14 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.canvasSumImage.setImageData(self.Scan[WhichImage])
 
     def comboTopograph_Changed(self):
-        pass
+        WhichImage = str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()).toString())
+        if WhichImage == '':
+            return
+        if WhichImage == 'Topograph':
+            self.canvasTopograph.setImageData(self.TopographRawData)
+        if WhichImage == 'TopographLog':
+            self.canvasTopograph.setImageData(np.log(self.TopographRawData))
+
 
     def comboSingleImage_Changed(self):
         WhichImage = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString())
@@ -333,9 +400,22 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.statusBar.showMessage('Selected: (x,y)=(%d,%d), value=%g' % Coord)
         # If the sum image was clicked, then that means we need to turn that pixel or region into a topograph.
         if Canvas == self.canvasSumImage:
+            # Make the topograph.
             self.statusBar.showMessage('Generating topograph from coordinate (x,y)=(%d,%d)...' % Coord[0:2])
             Topo = BasicProcessing.MakeTopographFromCoordinate(self.Scan, Coord)
-            self.canvasTopograph.setImageData(Topo)
+
+            # Store the raw data for the topograph.  This will be plotted when we select a combo box item.
+            self.TopographRawData = Topo
+
+            # Repopulate the combo box.
+            self.comboTopograph.clear()
+            self.comboTopograph.addItem('Topograph Logarithmic', 'TopographLog')
+            self.comboTopograph.addItem('Topograph Linear', 'Topograph')
+
+            # And select the first option.
+            self.comboTopograph.setCurrentIndex(0)
+            self.comboTopograph_Changed()
+
             self.statusBar.showMessage('Generated topograph from coordinate (x,y)=(%d,%d)' % Coord[0:2])
         if Canvas == self.canvasTopograph:
             # If the user clicked on a topograph pixel, then get the diffraction pattern from that pixel.
