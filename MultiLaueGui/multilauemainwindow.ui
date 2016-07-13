@@ -149,6 +149,7 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionAbout_MultiLaue"/>
     <addaction name="actionOpen_GitHub_Website"/>
    </widget>
    <addaction name="menu_File"/>
@@ -245,6 +246,14 @@
   <action name="actionOpen_GitHub_Website">
    <property name="text">
     <string>Open GitHub Website</string>
+   </property>
+  </action>
+  <action name="actionAbout_MultiLaue">
+   <property name="text">
+    <string>About MultiLaue</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>true</bool>
    </property>
   </action>
  </widget>

@@ -138,6 +138,9 @@ class Ui_MultiLaueMainWindow(object):
         self.actionClose.setObjectName(_fromUtf8("actionClose"))
         self.actionOpen_GitHub_Website = QtGui.QAction(MultiLaueMainWindow)
         self.actionOpen_GitHub_Website.setObjectName(_fromUtf8("actionOpen_GitHub_Website"))
+        self.actionAbout_MultiLaue = QtGui.QAction(MultiLaueMainWindow)
+        self.actionAbout_MultiLaue.setIconVisibleInMenu(True)
+        self.actionAbout_MultiLaue.setObjectName(_fromUtf8("actionAbout_MultiLaue"))
         self.menu_File.addAction(self.action_Open_Scan)
         self.menu_File.addAction(self.actionSave_Aggregate_Image)
         self.menu_File.addAction(self.actionSave_Topograph_Image)
@@ -148,6 +151,7 @@ class Ui_MultiLaueMainWindow(object):
         self.menu_File.addAction(self.actionProcess_MultiLaue)
         self.menu_File.addSeparator()
         self.menu_File.addAction(self.actionClose)
+        self.menuHelp.addAction(self.actionAbout_MultiLaue)
         self.menuHelp.addAction(self.actionOpen_GitHub_Website)
         self.menuBar.addAction(self.menu_File.menuAction())
         self.menuBar.addAction(self.menuHelp.menuAction())
@@ -177,5 +181,6 @@ class Ui_MultiLaueMainWindow(object):
         self.actionSave_All_Three_Images.setText(_translate("MultiLaueMainWindow", "Save All Three Images", None))
         self.actionClose.setText(_translate("MultiLaueMainWindow", "Close Scan", None))
         self.actionOpen_GitHub_Website.setText(_translate("MultiLaueMainWindow", "Open GitHub Website", None))
+        self.actionAbout_MultiLaue.setText(_translate("MultiLaueMainWindow", "About MultiLaue", None))
 
 import icons_rc

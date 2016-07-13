@@ -7,5 +7,6 @@
         <file alias="Save Topograph">Icons8/heat_map_save.png</file>
         <file alias="Save Aggregate">Icons8/sigma_save.png</file>
         <file alias="Save Single">Icons8/unicast_save.png</file>
+        <file alias="Laue">Icons8/LaueIcon96x96.png</file>
     </qresource>
 </RCC>

@@ -5,6 +5,7 @@ import os
 os.environ['QT_API'] = 'pyqt'
 import numpy as np
 from MultiLaueGUI import Ui_MultiLaueMainWindow
+from AboutBox import Ui_AboutDialog
 from PyQt4 import QtGui, QtCore
 from skimage.external.tifffile import imsave
 import json
@@ -84,11 +85,19 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
             return
         #print event.xdata, event.ydata
 
+class AboutBoxDialog(QtGui.QDialog, Ui_AboutDialog):
+    def __init__(self):
+        super(AboutBoxDialog, self).__init__()
+        self.setupUi(self)
+
 class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
     def __init__(self):
         super(Main, self).__init__()
         self.setupUi(self)
         #self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
+        self.setWindowIcon(QtGui.QIcon(":/Icons/Laue"))
+        QtApp.setWindowIcon(QtGui.QIcon(":/Icons/Laue"))
 
         # Set up the matplotlib plots.
         self.canvasSumImage = MplCanvas(self, width=5, height=4, dpi=100)
@@ -133,6 +142,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.actionProcess_MultiLaue.triggered.connect(self.ProcessMultiLaue)
         self.actionClose.triggered.connect(self.CloseScan)
         self.actionOpen_GitHub_Website.triggered.connect(self.OpenGitHub)
+        self.actionAbout_MultiLaue.triggered.connect(self.CallAboutBox)
 
         # Connect the combo boxes to their images.
         self.comboSumImage.currentIndexChanged.connect(self.comboSumImage_Changed)
@@ -158,6 +168,9 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             with open('MultiLaueDefaults.json', 'w') as f:
                 f.write(DefaultsStr)
 
+    def CallAboutBox(self):
+        Dlg = AboutBoxDialog()
+        Dlg.exec_()
 
     def closeEvent(self, event):
         # Before closing, make sure we write out the defaults to disk.
@@ -452,6 +465,20 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
 if __name__ == '__main__':
 
     QtApp = QtGui.QApplication(sys.argv)
+    QtApp.setApplicationName('MultiLaue')
+
+    from sys import platform
+
+    # # Check if we're on OS X, first.
+    # if platform == 'darwin':
+    #     from Foundation import NSBundle
+    #
+    #     bundle = NSBundle.mainBundle()
+    #     if bundle:
+    #         info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
+    #         if info and info['CFBundleName'] == 'Python':
+    #             info['CFBundleName'] = 'MultiLaue'
+
     main = Main()
     main.show()
     sys.exit(QtApp.exec_())

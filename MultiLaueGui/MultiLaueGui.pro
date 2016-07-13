@@ -17,7 +17,8 @@ SOURCES += main.cpp \
 
 HEADERS  += multilauemainwindow.h
 
-FORMS    += multilauemainwindow.ui
+FORMS    += multilauemainwindow.ui \
+    aboutbox.ui
 
 RESOURCES += \
     icons.qrc
