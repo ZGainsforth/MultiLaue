@@ -46,10 +46,8 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
 
     def DrawInitialFigure(self):
         self.ImageData = np.ones((100,100))
-        x = np.linspace(1, 10, 30)
-        #self.axes.plot(x, np.sin(x))
-        self.axes.imshow(self.ImageData.T, interpolation='none', cmap='gray')
-        #self.axes.text(35,55, 'No data', color='white')
+        self.axes.imshow(self.ImageData, interpolation='none', cmap='gray')
+        #self.axes.spy(self.ImageData.T)
 
     def sizeHint(self):
         return QtCore.QSize(300,300)
@@ -58,9 +56,9 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         return QtCore.QSize(100,100)
 
     def setImageData(self, ImageData):
-        # Get the numpy array from the HDF5 object, transpose it for the correct orientation on the screen, get rids of nans,
+        # Get the numpy array from the HDF5 object, rotate it for the correct orientation on the screen, get rids of nans,
         # and change any negative infinities to zero (happens in the log images).
-        self.ImageData = ImageData[:].T
+        self.ImageData = np.rot90(ImageData[:], 3)
         self.ImageData[np.isinf(self.ImageData)] = 0
         self.ImageData = np.nan_to_num(self.ImageData)
         self.axes.imshow(self.ImageData, interpolation='none', cmap='gray')
@@ -223,6 +221,8 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             self.Scan = Scan
             self.statusBar.showMessage('Opened ' + Scan.attrs['ScanName'] + '.')
 
+            self.comboSumImage.blockSignals(True) # Don't allow the changed signal to trigger until we're done populating.
+
             # Populate the combobox for the sum image with whatever sum images are in the scan.
             if 'StDevLogImage' in Scan:
                 self.comboSumImage.addItem('StDev Image Logarithmic', 'StDevLogImage')
@@ -234,7 +234,12 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
                 self.comboSumImage.addItem('Sum Image', 'SumImage')
 
             # Set the index to the first in the list.
-            self.comboSumImage.setCurrentIndex(0)
+            # And select the last option selected by the user or nothing if it doesn't exist.
+            try:
+                self.comboSumImage.setCurrentIndex(self.comboSumImage.findData(self.Defaults['comboSumImageLastValue']))
+            except:
+                self.comboSumImage.setCurrentIndex(0)
+            self.comboSumImage.blockSignals(False) # Re-enable the changed signal.
             self.comboSumImage_Changed()
 
     def SaveAggregateImage(self, FileName=None):
@@ -376,12 +381,20 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.MultiLaueThread = None
 
     def comboSumImage_Changed(self):
+        # Note the current zoom settings.
+        FigZoom = self.NoteFigureZoom(self.canvasSumImage)
         WhichImage = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString())
         if WhichImage == '':
             return
         self.canvasSumImage.setImageData(self.Scan[WhichImage])
+        self.Defaults['comboSumImageLastValue'] = WhichImage
+        # Put the zoom back
+        self.ResetFigureZoom(self.canvasSumImage, FigZoom)
+
 
     def comboTopograph_Changed(self):
+        # Note the current zoom settings.
+        FigZoom = self.NoteFigureZoom(self.canvasTopograph)
         WhichImage = str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()).toString())
         if WhichImage == '':
             return
@@ -389,9 +402,29 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             self.canvasTopograph.setImageData(self.TopographRawData)
         if WhichImage == 'TopographLog':
             self.canvasTopograph.setImageData(np.log(self.TopographRawData))
+        self.Defaults['comboTopographLastValue'] = WhichImage
+        # Put the zoom back
+        self.ResetFigureZoom(self.canvasTopograph, FigZoom)
 
+
+    def NoteFigureZoom(self, Canvas):
+        xlim = Canvas.axes.get_xlim()
+        ylim = Canvas.axes.get_ylim()
+        shape = Canvas.ImageData.shape
+        return (xlim, ylim, shape)
+
+    def ResetFigureZoom(self, Canvas, ZoomSettings):
+        # If the new image has the same dimensions, then zoom in to the same settings the user was just at.
+        if ZoomSettings[2] == Canvas.ImageData.shape:
+            Canvas.axes.set_xlim(ZoomSettings[0])
+            Canvas.axes.set_ylim(ZoomSettings[1])
+            Canvas.draw()
 
     def comboSingleImage_Changed(self):
+        # Note the current zoom settings.
+        FigZoom = self.NoteFigureZoom(self.canvasSingleImage)
+
+        # Now switch the image to the one just selected.
         WhichImage = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString())
         if WhichImage == '':
             return
@@ -403,6 +436,10 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             self.canvasSingleImage.setImageData(self.EnergyImageRawData)
         if WhichImage == 'EnergyFit':
             self.canvasSingleImage.setImageData(self.EnergyFitImageRawData)
+        self.Defaults['comboSingleImageLastValue'] = WhichImage
+
+        # Put the zoom back
+        self.ResetFigureZoom(self.canvasSingleImage, FigZoom)
 
     def StatusFunc(self, StatusStr):
         # The status is ALWAYS written to the status bar.
@@ -413,6 +450,9 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.statusBar.showMessage('Selected: (x,y)=(%d,%d), value=%g' % Coord)
         # If the sum image was clicked, then that means we need to turn that pixel or region into a topograph.
         if Canvas == self.canvasSumImage:
+            # Note the current zoom settings of the topograph image canvas.
+            FigZoom = self.NoteFigureZoom(self.canvasTopograph)
+
             # Make the topograph.
             self.statusBar.showMessage('Generating topograph from coordinate (x,y)=(%d,%d)...' % Coord[0:2])
             Topo = BasicProcessing.MakeTopographFromCoordinate(self.Scan, Coord)
@@ -422,15 +462,26 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
 
             # Repopulate the combo box.
             self.comboTopograph.clear()
+            self.comboTopograph.blockSignals(True) # Don't allow the changed signal to trigger until we're done populating.
             self.comboTopograph.addItem('Topograph Logarithmic', 'TopographLog')
             self.comboTopograph.addItem('Topograph Linear', 'Topograph')
 
-            # And select the first option.
-            self.comboTopograph.setCurrentIndex(0)
+            # And select the last option selected by the user or nothing if it doesn't exist.
+            try:
+                self.comboTopograph.setCurrentIndex(self.comboTopograph.findData(self.Defaults['comboTopographLastValue']))
+            except:
+                self.comboTopograph.setCurrentIndex(0)
+            self.comboTopograph.blockSignals(False) # Re-enable the changed signal.
             self.comboTopograph_Changed()
+
+            # Put the zoom back
+            self.ResetFigureZoom(self.comboTopograph, FigZoom)
 
             self.statusBar.showMessage('Generated topograph from coordinate (x,y)=(%d,%d)' % Coord[0:2])
         if Canvas == self.canvasTopograph:
+            # Note the current zoom settings of the single image canvas.
+            FigZoom = self.NoteFigureZoom(self.canvasSingleImage)
+
             # If the user clicked on a topograph pixel, then get the diffraction pattern from that pixel.
             SingleImage, EnergyImage, EnergyFitImage = BasicProcessing.GetSingleImageFromTopographCoordinate(self.Scan, Coord)
             self.SingleImageRawData = SingleImage
@@ -440,6 +491,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             # Clear out any old image from the single image and combo box.
             self.canvasSingleImage.setImageData(np.zeros((100, 100)))
             self.comboSingleImage.clear()
+            self.comboSingleImage.blockSignals(True)  # Don't allow the changed signal to trigger until we're done populating.
 
             if self.Scan.attrs['ScanType'] == 'MultiLaue':
                 # Repopulate the combo box with linear and log options.
@@ -453,8 +505,16 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
                 self.comboSingleImage.addItem('Linear', 'Linear')
 
             # And select the first option.
-            self.comboSingleImage.setCurrentIndex(0)
+            # And select the last option selected by the user or nothing if it doesn't exist.
+            try:
+                self.comboSingleImage.setCurrentIndex(self.comboSingleImage.findData(self.Defaults['comboSingleImageLastValue']))
+            except:
+                self.comboSingleImage.setCurrentIndex(0)
+            self.comboSingleImage.blockSignals(False) # Re-enable the changed signal.
             self.comboSingleImage_Changed()
+
+            # Put the zoom back
+            self.ResetFigureZoom(self.canvasSingleImage, FigZoom)
 
             self.statusBar.showMessage('Picked single image from topograph from coordinate (x,y)=(%d,%d)' % Coord[0:2])
         if Canvas == self.canvasSingleImage:

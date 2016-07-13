@@ -159,11 +159,10 @@ def MakeMultiLaueEnergyCube(Scan, StatusFunc=None):
 
     Cube = Scan['DataCube']
 
-    # If the energy cube or energy fit val cubes exist, then nuke them so we can recompute.
-    if 'EnergyCube' in Scan:
-        del Scan['EnergyCube']
-    if 'EnergyFitValCube' in Scan:
-        del Scan['EnergyFitValCube']
+    # Remove any datasets we are going to compute in case we are recomputing.
+    for k in Scan.keys():
+        if k in ['EnergyCube', 'EnergyFitValCube', 'BeamlineFluxEnergies', 'BeamlineFlux', 'BeamlineFilteredSpectra', 'BeamlineApparentSpectra', 'BeamlineApparentRatioSpectra']:
+            del Scan[k]
 
     # The shape of the energy cube is the same as the shape of the Cube, minus the last (filter) dimension.
     EnergyCubeShape = Cube.shape[0:4]
@@ -181,7 +180,18 @@ def MakeMultiLaueEnergyCube(Scan, StatusFunc=None):
     FilterThicknesses = Scan['Filter'].attrs['FilterThicknesses']
     NumPositions = Scan['Filter'].attrs['NumberOfPositions']
 
+    # Get the Beamline flux apparent spectra and store them in the HDF5.
     BeamlineFilteredSpectra, BeamlineApparentSpectra, BeamlineApparentRatioSpectra = ComputeAbsorbedBeamlineFlux(WtPcts, FilterDensities, FilterThicknesses, NumPositions)
+    #Scan.create_dataset('FluxEnergies', E.shape)
+    Scan['BeamlineFluxEnergies'] = E
+    #Scan.create_dataset('BeamlineFlux', E.shape)
+    Scan['BeamlineFlux'] = Flux
+    #Scan.create_dataset('BeamlineFilteredSpectra', E.shape)
+    Scan['BeamlineFilteredSpectra'] = BeamlineFilteredSpectra
+    #Scan.create_dataset('BeamlineApparentSpectra', E.shape)
+    Scan['BeamlineApparentSpectra'] = BeamlineApparentSpectra
+    #Scan.create_dataset('BeamlineApparentRatioSpectra', E.shape)
+    Scan['BeamlineApparentRatioSpectra'] = BeamlineApparentRatioSpectra
 
     # Create an array (same size as one row in the topograph) to contain the results passed back by the multiprocessing.
     # Multiprocessing will do one row of the topograph at a time.
