@@ -514,7 +514,7 @@
     "RawScanInfo": {
         "FileNameFormat": "SiHyperlaueFinal_%01d_%05d.tif", 
         "LineDirectoryFormat": "Line%01d", 
-        "RawDataPath": "/Users/Zack/Desktop/Si Hyperlaue"
+        "RawDataPath": "/Users/Zack/Git/MultiLaue/Si Hyperlaue"
     }, 
     "Calibration": {
         "xPixels": 1043, 
