@@ -163,9 +163,12 @@ def ImportMonoScan(Config):
     for k,v in Config['Calibration'].items():
         Calibration.attrs[k] = v
 
+    # Make a dummy image to check if the image tranformation on import is going to change dimensions.
+    DummyImage = np.zeros((Config['Calibration']['xPixels'], Config['Calibration']['yPixels']))
+    DummyImage = TransformImageForDetector(DummyImage, Config['ScanInfo'])
+
     # Now make the data cube.  For Laue this is 4D: x,y stage, and x,y image.
-    CubeShape = (Config['ScanInfo']['xPixels'], Config['ScanInfo']['yPixels'], Config['Calibration']['xPixels'],
-             Config['Calibration']['yPixels'])
+    CubeShape = (Config['ScanInfo']['xPixels'], Config['ScanInfo']['yPixels'], DummyImage.shape[0], DummyImage.shape[1])
     # Note compression greatly speeds up the later processing since these stacks are mostly IO bound.  (Factor of 4 compression is a 4X performance gain!)
     Cube = Scan.create_dataset('DataCube', shape=CubeShape, dtype='float32', chunks=(1,1,200,200), compression='gzip')
 
@@ -197,7 +200,7 @@ def ImportMonoScan(Config):
                     else:
                         print StatusStr
 
-                    Cube[x, y, :, :] = T[0].asarray()
+                    Cube[x, y, :, :] = TransformImageForDetector(T[0].asarray(), Config['ScanInfo'])
                     MetadataCube[x,y] = T[0].tags['image_description'].value
 
             except IOError:
@@ -237,9 +240,12 @@ def ImportLaueScan(Config):
     for k,v in Config['Calibration'].items():
         Calibration.attrs[k] = v
 
+    # Make a dummy image to check if the image tranformation on import is going to change dimensions.
+    DummyImage = np.zeros((Config['Calibration']['xPixels'], Config['Calibration']['yPixels']))
+    DummyImage = TransformImageForDetector(DummyImage, Config['ScanInfo'])
+
     # Now make the data cube.  For Laue this is 4D: x,y stage, and x,y image.
-    CubeShape = (Config['ScanInfo']['xPixels'], Config['ScanInfo']['yPixels'], Config['Calibration']['xPixels'],
-             Config['Calibration']['yPixels'])
+    CubeShape = (Config['ScanInfo']['xPixels'], Config['ScanInfo']['yPixels'], DummyImage.shape[0], DummyImage.shape[1])
     # Note compression greatly speeds up the later processing since these stacks are mostly IO bound.  (Factor of 4 compression is a 4X performance gain!)
     Cube = Scan.create_dataset('DataCube', shape=CubeShape, dtype='float32', chunks=(1,1,200,200), compression='gzip')
 
@@ -271,7 +277,7 @@ def ImportLaueScan(Config):
                         Config['StatusFunc'](StatusStr)
                     else:
                         print StatusStr
-                    Cube[x, y, :, :] = T[0].asarray()
+                    Cube[x, y, :, :] = TransformImageForDetector(T[0].asarray(), Config['ScanInfo'])
                     MetadataCube[x,y] = T[0].tags['image_description'].value
             except IOError:
                 print FileNameFormat % i + ' could not be found.  Substituting zeros.'
@@ -316,9 +322,13 @@ def ImportMultiLaueScan(Config):
         else:
             Filter.attrs[k] = v
 
+    # Make a dummy image to check if the image tranformation on import is going to change dimensions.
+    DummyImage = np.zeros((Config['Calibration']['xPixels'], Config['Calibration']['yPixels']))
+    DummyImage = TransformImageForDetector(DummyImage, Config['ScanInfo'])
+
     # Now make the data cube.  For MultiLaue this is 5D: x,y stage,  x,y image by # filters.
-    CubeShape = (Config['ScanInfo']['xPixels'], Config['ScanInfo']['yPixels'], Config['Calibration']['xPixels'],
-             Config['Calibration']['yPixels'], Config['FilterInfo']['NumberOfPositions'])
+    CubeShape = (Config['ScanInfo']['xPixels'], Config['ScanInfo']['yPixels'], DummyImage.shape[0], DummyImage.shape[1],
+                 Config['FilterInfo']['NumberOfPositions'])
     # Note compression greatly speeds up the later processing since these stacks are mostly IO bound.  (Factor of 4 compression is a 4X performance gain!)
     Cube = Scan.create_dataset('DataCube', shape=CubeShape, dtype='float32', chunks=(1,1,200,200,4), compression='gzip')#, compression_opts=7) # Compression 7 will improve by 10% but take waaay longer for the first import.
 
@@ -355,7 +365,7 @@ def ImportMultiLaueScan(Config):
                             Config['StatusFunc'](StatusStr)
                         else:
                             print StatusStr
-                        Cube[x, y, :, :, f] = T[0].asarray()
+                        Cube[x, y, :, :, f] = TransformImageForDetector(T[0].asarray(), Config['ScanInfo'])
                         MetadataCube[x, y, f] = T[0].tags['image_description'].value
                 except IOError:
                     print FileNameFormat % (y+1,i+1) + ' could not be found.  Substituting zeros.'
@@ -374,6 +384,19 @@ def ImportMultiLaueScan(Config):
     Scan.create_dataset('StDevLogImage', data=StDevLog, dtype='float32')
 
     h5.close()
+
+
+def TransformImageForDetector(ImageData, ScanInfo):
+    if (ScanInfo['Synchrotron'] == 'ALS') and (ScanInfo['BeamLine'] == '12.3.2') and (ScanInfo['Detector'] == 'Pilatus'):
+        # Get the numpy array from the HDF5 object, rotate it for the correct orientation on the screen, get rids of nans,
+        # and change any negative infinities to zero (happens in the log images).
+        NewImageData = np.rot90(ImageData[:], 3)
+        NewImageData[np.isinf(NewImageData)] = 0
+        NewImageData = np.nan_to_num(NewImageData)
+        return NewImageData
+    else:
+        assert False, 'Unrecognized Synchrotron, Beamline, Detector combination.'
+
 
 if __name__ == '__main__':
 

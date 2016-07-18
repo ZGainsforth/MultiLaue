@@ -84,7 +84,7 @@ def MakeSumImage(Scan, StatusFunc=None):
     #
     # print np.max(np.max(Sum))
     #
-    # SumLog1 = np.log(Sum)
+    # SumLog1 = CleanLog(Sum)
     # #plt.imshow(SumLog, interpolation='none', cmap='gray')
     # #plt.show()
     #
@@ -113,7 +113,7 @@ def MakeSumImage(Scan, StatusFunc=None):
                 # MultiLaue sums are just the sum of each frame with the first filter position.
                 Sum += Cube[x, y, :, :, 0]
 
-    SumLog = np.log(Sum)
+    SumLog = CleanLog(Sum)
 
     # # plt.imshow(SumLog, interpolation='none', cmap='gray')
     # # plt.show()
@@ -158,12 +158,13 @@ def MakeStDevImage(Scan, StatusFunc=None):
 
     # N-1 in case of low number of pixels.
     StDev = np.sqrt(StDev / (N-1))
-    StDevLog = np.log(StDev)
+    StDevLog = CleanLog(StDev)
 
     return StDev, StDevLog
 
-def MakeTopographFromCoordinate(Scan, Coord):
+def MakeTopographFromCoordinate(Scan, CoordIn):
     Cube = Scan['DataCube']
+    Coord = ConvertCanvasCoordinatesToDataCoordinates(CoordIn)
 
     Topo = np.zeros(Cube.shape[0:2])
 
@@ -177,8 +178,9 @@ def MakeTopographFromCoordinate(Scan, Coord):
 
     return Topo
 
-def GetSingleImageFromTopographCoordinate(Scan, Coord):
+def GetSingleImageFromTopographCoordinate(Scan, CoordIn):
     Cube = Scan['DataCube']
+    Coord = ConvertCanvasCoordinatesToDataCoordinates(CoordIn)
 
     if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
         SingleImage = Cube[Coord[0], Coord[1], :, :]
@@ -191,6 +193,21 @@ def GetSingleImageFromTopographCoordinate(Scan, Coord):
 
     return SingleImage, EnergyImage, EnergyFitImage
 
+def ConvertCanvasCoordinatesToDataCoordinates(CanvasCoordinate):
+    c = np.array(CanvasCoordinate)
+    # The data is stored as mxn instead of x,y so transpose the coordinates.
+    # The canvas reports each value at the center of the pixels instead of the corner, so we also add an offset of 1/2.
+    c[0] = np.floor(CanvasCoordinate[1] + 0.5)
+    c[1] = np.floor(CanvasCoordinate[0] + 0.5)
+    return c
+
+def CleanLog(Val):
+    # Returns a log of an image, but without infinities or nans.
+    LogVal = np.log(Val)
+    LogVal[np.isinf(LogVal)] = 0
+    LogVal = np.nan_to_num(LogVal)
+    return LogVal
+
 if __name__ == '__main__':
 
     f, Scan = LoadScan('GRA95229_mLaue_7.hdf5', readwrite=True)
@@ -200,3 +217,4 @@ if __name__ == '__main__':
     StDev, StDevLog = MakeStDevImage(Scan)
 
     f.close()
+

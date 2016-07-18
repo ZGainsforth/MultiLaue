@@ -7,7 +7,7 @@ import PhysicsBasics as pb
 import h5py
 import multiprocessing
 import time
-from AbsorptionCorrection import DoAbsorptionFilter
+from AbsorptionCorrection import DoAbsorptionFilter, CorrectDetectorProperties
 from multiprocessing import Pool
 from BasicProcessing import LoadScan
 from PyQt4 import QtGui, QtCore
@@ -45,7 +45,7 @@ def ComputeAbsorbedBeamlineFlux(WtPct, rho, t, NumFilters):
     for n in range(len(t)):
         #First just get the absorption as a function of energy for incident intensity of 1.
         NormalizedCurve = DoAbsorptionFilter(E, Iin=1, WtPct=WtPct[n,:], rho=rho[n], AbsorptionLength=t[n])
-        #NormalizedCurve = CorrectDetectorProperties(E, NormalizedCurve, 50, 50, 0.001, 0.001, 350, 0.001)  # This should improve things, but right now the filter thicknesses are calibrated without it.
+        NormalizedCurve = CorrectDetectorProperties(E, NormalizedCurve, 50, 50, 0.001, 0.001, 350, 0.001)  # This should improve things, but right now the filter thicknesses are calibrated without it.
         # Multiply that by the flux of the incident beam to get the actual light spectrum hitting the sample through each filter.
         FilteredSpectrum.append(NormalizedCurve*Flux)
 
@@ -247,16 +247,133 @@ class ProcessMultiLaueThread(QtCore.QThread):
         else:
             print StatusStr
 
+def TestAgainstSilicon():
+    # Reflection (-3,3,-3) with energy 8.44862 has intensities:
+    # No filter:     108708
+    # One filter:    79690.7
+    # Two filters:   57407.9
+    # Three filters: 37413.6
+    #I = np.array([108708, 79690, 57407, 37413]) # Observed energies.
+    #I = np.array([ 108708.,   79690.,   57916.,   42499.]) # back computed from jump values.
+
+    # Reflection (-2,4,-2) with energy 12.4727 has intensities:
+    # No filter:     175932
+    # One filter:    147997
+    # Two filters:   116348
+    # Three filters: 70706
+    #I = np.array([175932, 147997, 116348, 70706]) # Observed energies.
+    #I = np.array([179167, 145417, 112917, 87084]) # back computed from jumps.
+
+    # Reflection (-5,5,-3) with energy 15.6641 has intensities:
+    # No filter:     71846.3
+    # One filter:    63194.4
+    # Two filters:   54027.5
+    # Three filters: 43934
+    #I = np.array([71846, 63194, 54027, 43934]) # Observed energies. #(from ignoring the slopes)
+    #I = np.array([71080, 63261, 56302, 50109]) # Observed energies. # using only the discontinuities
+
+    hkls = np.array([ [-2 ,    4 ,   -2],
+                      [-3 ,    3 ,   -1],
+                      [-4 ,    2 ,   -2],
+                      [-3 ,    3 ,   -3],
+                      [-5 ,    3 ,   -1],
+                      [-6 ,    4 ,   -2],
+                      [-3 ,    5 ,   -3],
+                      [-6 ,    6 ,   -4],
+                      [-5 ,    5 ,   -3],
+                      [-5 ,    3 ,   -3],
+                      [-4 ,    6 ,   -6],
+                      [-3 ,    5 ,   -5],
+                      [-3 ,    7 ,   -5],
+                      [-7 ,    5 ,   -3],
+                      [-6 ,    8 ,   -6],
+                      [-5 ,    7 ,   -5],
+                      [-8 ,    6 ,   -6],
+                      [-3 ,    5 ,   -7],
+                      [-6 ,    6 ,   -8],
+                      [-9 ,    5 ,   -3],
+                      [-7 ,    5 ,   -5],
+                      [-3 ,    7 ,   -7],
+                      [-5 ,    7 ,   -7],
+                      [-10,     6,    -8],
+                      [-6 ,    8 ,  -10],
+                      [-9 ,    5 ,   -5],
+                      [-3 ,    7 ,   -9],
+                      [-9 ,    5 ,   -7],
+                      [-5 ,    7 ,   -9],
+                      [-9 ,    7 ,   -7],
+                      [-7 ,    7 ,   -9],
+                      [-11,     5,    -7],
+                      ])
+    TableEperfect = list()
+    TableEfit = list()
+    TableEError = list()
+    TableRelError = list()
+
+    for hkl in hkls: #np.array([[-5 ,    3 ,   -3]]): #hkls:
+        # Now we just compute directly from the hkl.
+        (I, Eperfect) = PlotValues(hkl, quiet=True)
+
+        #t = np.array([0, 100, 200, 300]) # Thickness with 0-3 slips each 100 um thick.
+        t = np.array([0, 112, 222, 334]) # Thickness with 0-3 slips each 100 um thick.
+        rho = 2.2 # g/cm3
+        WtPct = np.zeros(pb.MAXELEMENT)
+        WtPct[pb.Si-1] = 46.74
+        WtPct[pb.O-1] = 53.26
+        Efit = ComputeSpotEnergy(I, WtPct, rho, t, quiet=True)
+
+        Eerror = np.abs(Efit - Eperfect)
+        RelError = np.abs(Efit - Eperfect) / Eperfect * 100
+        print "Error in energy is %g.  Relative error is %0.02f percent" % (Eerror, RelError)
+
+        TableEperfect.append(Eperfect)
+        TableEfit.append(Efit)
+        TableEError.append(Eerror)
+        TableRelError.append(RelError)
+
+    # Now these are populated to switch to numpy.
+    TableEperfect = np.array(TableEperfect) / 1000 # Convert eV to keV.
+    TableEfit = np.array(TableEfit) / 1000
+    TableEError = np.array(TableEError)
+    TableRelError = np.array(TableRelError)
+
+    # Show a final figure comparing the errors against the flux curve.  Publication quality!
+    FluxCurve = np.genfromtxt('../Beamline Characteristics/whitebeamflux.txt', skip_header=1)
+    FluxCurve[:,1] /= max(FluxCurve[:,1])/35
+    FluxCurve[:,0] /= 1000 # Switch to keV from eV.
+
+    fig, ax = QuickPlot.SpecPlot(FluxCurve, boldlevel=3, title='Flux curve compared with errors', xlabel='keV', ylabel='Points: % relative error\nCurve: flux (arbitrary units)')
+    QuickPlot.QuickPlot(TableEperfect,TableRelError, figax=(fig,ax), plottype='scatter', boldlevel=5)
+    plt.legend(['Flux Curve', 'Error of best fit values'])
+
+    print ("%% rel error mean = %0.02f and standard deviation: %0.02f" % (np.mean(TableRelError), np.std(TableRelError)))
+
+    print TableEfit
+    Keepers = (TableEfit>11) & (TableEfit<21)
+    print Keepers
+
+    print ("%% rel error mean = %0.02f and standard deviation: %0.02f in region 11-21 keV" % (np.mean(TableRelError[Keepers]), np.std(TableRelError[Keepers])))
+
+    def raise_window(figname=None):
+        if figname: plt.figure(figname)
+        cfm = plt.get_current_fig_manager()
+        cfm.window.activateWindow()
+        cfm.window.raise_()
+
+    raise_window()
+    plt.show()
 
 if __name__ == '__main__':
 
-    quiet = False
-    tStart = time.time()
-    #f, Scan = LoadScan('GRA95229_mLaue_7.hdf5', readwrite=True)
-    #f, Scan = LoadScan('GRA95229_mLaue2.hdf5', readwrite=True)
-    f, Scan = LoadScan('Si Hyperlaue/SiHyperlaueFinal_Shielded_Extract.hdf5', readwrite=True)
-    EnergyCube = MakeMultiLaueEnergyCube(Scan)
-    #Scan.create_dataset('EnergyCube', data=EnergyCube)
-    f.close()
-    print time.time() - tStart
+    TestAgainstSilicon()
+
+    # quiet = False
+    # tStart = time.time()
+    # #f, Scan = LoadScan('GRA95229_mLaue_7.hdf5', readwrite=True)
+    # #f, Scan = LoadScan('GRA95229_mLaue2.hdf5', readwrite=True)
+    # f, Scan = LoadScan('Si Hyperlaue/SiHyperlaueFinal_Shielded_Extract.hdf5', readwrite=True)
+    # EnergyCube = MakeMultiLaueEnergyCube(Scan)
+    # #Scan.create_dataset('EnergyCube', data=EnergyCube)
+    # f.close()
+    # print time.time() - tStart
 
