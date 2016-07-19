@@ -62,6 +62,7 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
         self.txtMax.editingFinished.connect(self.txtMinMaxEdited)
         self.txtMin.textChanged.connect(self.txtMinMaxEditing)
         self.txtMax.textChanged.connect(self.txtMinMaxEditing)
+        self.btn_AutoScale.clicked.connect(self.AutoScaleButton)
 
     def txtMinMaxEditing(self):
         self.MinText = self.txtMin.text()
@@ -183,6 +184,8 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
         else:
             self.txtMax.setText('{:>10.2e}'.format(Image['vlim'][1]))
 
+    def AutoScaleButton(self):
+        self.parent.DoAutoScale()
 
 class MplCanvas(FigureCanvas, QtGui.QWidget):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
@@ -317,7 +320,6 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
             mean = Image['mean']
             std = Image['std']
 
-
         # Autoscale is skew for log images -- shows more high values
         # in no case, do we ever scale below zero or above the max value.
         if 'Log' in Image['ImageName']:
@@ -328,6 +330,11 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
             vmax = np.min((mean + 2 * std, Image['max']))
 
         return vmin, vmax
+
+    def DoAutoScale(self):
+        CurrentImage = self.Images[self.CanvasViewSettings['CurrentImageKey']]
+        CurrentImage['vlim'] = self.GetAutoScale(CurrentImage)
+        self.plotImage()
 
     def NoteFigureZoom(self):
         self.CanvasViewSettings['xlim'] = self.axes.get_xlim()
