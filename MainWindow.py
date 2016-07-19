@@ -303,8 +303,31 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         Image['min'] = np.min(Image['ImageData'])
         Image['mean'] = np.mean(Image['ImageData'])
         Image['std'] = np.std(Image['ImageData'])
-        Image['vlim'] = np.array([Image['mean'] - 2 * Image['std'], Image['mean'] + 2 * Image['std']])
+        Image['vlim'] = self.GetAutoScale(Image) #np.array([Image['mean'] - 2 * Image['std'], Image['mean'] + 2 * Image['std']])
         return
+
+    def GetAutoScale(self, Image):
+        # Energy images are different.  Most of the pixels are 0.  So we're going to treat them as nan and then compute.
+        if 'Energy' in Image['ImageName']:
+            TempImage = np.copy(Image['ImageData'])
+            TempImage[TempImage == 0] = np.nan
+            mean = np.nanmean(TempImage)
+            std = np.nanstd(TempImage)
+        else:
+            mean = Image['mean']
+            std = Image['std']
+
+
+        # Autoscale is skew for log images -- shows more high values
+        # in no case, do we ever scale below zero or above the max value.
+        if 'Log' in Image['ImageName']:
+            vmin = np.max((mean - std, 0))
+            vmax = np.min((mean + 3 * std, Image['max']))
+        else:
+            vmin = np.max((mean - 2 * std, 0))
+            vmax = np.min((mean + 2 * std, Image['max']))
+
+        return vmin, vmax
 
     def NoteFigureZoom(self):
         self.CanvasViewSettings['xlim'] = self.axes.get_xlim()
