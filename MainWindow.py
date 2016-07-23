@@ -194,16 +194,18 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
             if d is not None:
                 self.lbl_d.setText(u'd = %9.3g \u212B' % d)
             else:
-                self.lbl_d.setText(u'd = n/a')
-            self.lbl_twotheta.setText(u'2\u03b8 = %6.3g deg' % twotheta)
-            self.lbl_chi.setText(u'\u03c7 = %5.3g deg' % chi)
+                self.lbl_d.setText(u'd =        n/a')
+            self.lbl_twotheta.setText(u'2\u03b8 = %5.3g deg' % twotheta)
+            #self.lbl_chi.setText(u'\u03c7 = %4.3g deg' % chi)
+            self.lbl_chi.setText('')
 
         else:
             self.lbl_FitVal.setText('{:>14s}'.format(' '))
             (d, twotheta, chi) = self.get_d_twotheta_chi(x, y, None)
             self.lbl_d.setText('') # We can only get d for energy images.
-            self.lbl_twotheta.setText(u'2\u03b8 = %9.3g deg' % twotheta)
-            self.lbl_chi.setText(u'\u03c7 = %9.3g deg' % chi)
+            self.lbl_twotheta.setText(u'2\u03b8 = %5.3g deg' % twotheta)
+            #self.lbl_chi.setText(u'\u03c7 = %4.3g deg' % chi)
+            self.lbl_chi.setText('')
 
         self.lbl_mean.setText(u'Mean = %8.3g' % (Image['mean']))
         self.lbl_sigma.setText(u'\u03c3 = %11.3g' % (Image['std']))
