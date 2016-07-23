@@ -7,7 +7,7 @@ import numpy as np
 # This will be changed with the QT version shortly.
 #import QuickWxDialogs as Dlgs
 
-class Stack():
+class DetectorGeometry():
     # This class contains all the information about an XRD stack.
     DirectoryName = None
     FileNameFormat = None
@@ -15,10 +15,8 @@ class Stack():
     Calibration = {'xmm': 179.0, 'TwoThetaCenter': 75.0, 'xPixels': 1043, 'xCenter': 538.153, 'yPixels': 981,
          'DetectorDistance': 162.498, 'yCenter': 230.63, 'ymm': 168.387, 'DetName': 'ALS12.3.2Pilatus'}
 
-    def __init__(self, DirectoryName, FileNameFormat, shape=(1,1), Calibration=None):
+    def __init__(self, shape=(1, 1), Calibration=None):
         """
-        :param DirectoryName: Directory with files for the stack.
-        :param FileNameFormat: Format of the file name like "file%03d.tif" so we can fill in the numbers.
         :param shape: How many pixels in the stack.  Can be 2D (Laue/Mono) or 3D (MultiLaue)
 
         >>> C = dict()
@@ -31,7 +29,7 @@ class Stack():
         >>> C['yCenter'] = 230.630
         >>> C['xmm'] = 719.000
         >>> C['ymm'] = 168.387
-        >>> S = Stack(None, None, shape=(1,1), Calibration=C)
+        >>> S = DetectorGeometry(shape=(1,1), Calibration=C)
 
         """
         self.shape = shape
@@ -77,7 +75,7 @@ class Stack():
         >>> C['yCenter'] = 230.630
         >>> C['xmm'] = 179.000
         >>> C['ymm'] = 168.387
-        >>> S = Stack(None, None, shape=(1,1), Calibration=C)
+        >>> S = DetectorGeometry(shape=(1,1), Calibration=C)
         >>> print S.GetTwoThetaChi(538.153,230.630) # Center pixel
         (75.0, 0.0)
         >>> print S.GetTwoThetaChi(538,1) # Some other spots
@@ -138,7 +136,7 @@ class Stack():
         # Chi comes from the dot product, but is the angle between kchi and the y-axis.  Hence arcsin, not arccos.
         Chi = np.degrees(np.arcsin(np.dot(kchi, np.array([1,0,0]))/kchimag))
 
-        return (TwoTheta, Chi)
+        return (TwoTheta, Chi, kmag)
 
 if __name__ == '__main__':
     import doctest

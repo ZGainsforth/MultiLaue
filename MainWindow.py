@@ -11,6 +11,7 @@ from PyQt4 import QtGui, QtCore
 from skimage.external.tifffile import imsave
 import json
 import matplotlib
+from DetectorGeometry import DetectorGeometry
 
 matplotlib.use('Qt4Agg')
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -64,6 +65,14 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
         self.txtMax.textChanged.connect(self.txtMinMaxEditing)
         self.btn_AutoScale.clicked.connect(self.AutoScaleButton)
 
+        # Plancks constant.
+        self.h = 6.626070040e-34  # J*S
+        # Speed of light
+        self.c = 299792458  # m/s
+        self.q = 1.602177e-19
+        self.hcover2q = self.h*self.c/2/self.q
+
+
     def txtMinMaxEditing(self):
         self.MinText = self.txtMin.text()
         self.MaxText = self.txtMax.text()
@@ -99,6 +108,22 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
         Image = self.parent.Images[self.parent.CanvasViewSettings['CurrentImageKey']]
         Image['vlim'] = np.array([MinVal, MaxVal])
         self.parent.plotImage()
+
+    def get_d_twotheta_chi(self, x, y, E):
+        try:
+            g = self.DetectorGeometry
+        except:
+            self.DetectorGeometry = DetectorGeometry(Calibration=self.parent.parent.Scan['Calibration'].attrs)
+            g = self.DetectorGeometry
+
+        twotheta, chi, kmag = g.GetTwoThetaChi(x, y)
+
+        if E is None or E == 0:
+            d = None
+        else:
+            d = self.hcover2q/E/np.sin(np.radians(twotheta/2))*1e10 # Braggs law for d in A, using energy in eV.
+
+        return d, twotheta, chi
 
     def setxy(self, x, y):
         # There are several types of image which cause the DataReadoutControl to populate the read out differently.  These are the possible
@@ -148,15 +173,10 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
 
         # d, chi, and twotheta are ignored in topographs and calculated otherwise.
         if 'Topograph' in ImageKey:
-            self.lbl_d.setText('')
             self.lbl_chi.setText('')
             self.lbl_twotheta.setText('')
-        else:
-            self.lbl_d.setText('d = ')
-            self.lbl_chi.setText(u'\u03c7 = ')
-            self.lbl_twotheta.setText(u'2\u03b8 = ')
-
-        if 'Energy' in ImageKey:
+            self.lbl_FitVal.setText('{:>14s}'.format(' '))
+        elif 'Energy' in ImageKey:
             # For the energy images, we need to report counts from the raw laue, the fit and the energy.  All this data is stored in the
             # main class (parent of the canvas) if the Energy or energy fit images are loaded.
             # Counts = self.parent.parent.SingleImageRawData[int(y + 0.5), int(x + 0.5)]
@@ -169,8 +189,21 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
             self.lbl_I.setText('E = %9.3g keV' % Energy)
             self.lbl_Counts.setText('Counts = %8.3g' % Counts)
             self.lbl_FitVal.setText('Fit = {:>8.3g}'.format(Fit))  # 'Fit = %8.6g' % Fit)
+
+            (d, twotheta, chi) = self.get_d_twotheta_chi(x, y, Energy)
+            if d is not None:
+                self.lbl_d.setText(u'd = %9.3g \u212B' % d)
+            else:
+                self.lbl_d.setText(u'd = n/a')
+            self.lbl_twotheta.setText(u'2\u03b8 = %6.3g deg' % twotheta)
+            self.lbl_chi.setText(u'\u03c7 = %5.3g deg' % chi)
+
         else:
             self.lbl_FitVal.setText('{:>14s}'.format(' '))
+            (d, twotheta, chi) = self.get_d_twotheta_chi(x, y, None)
+            self.lbl_d.setText('') # We can only get d for energy images.
+            self.lbl_twotheta.setText(u'2\u03b8 = %9.3g deg' % twotheta)
+            self.lbl_chi.setText(u'\u03c7 = %9.3g deg' % chi)
 
         self.lbl_mean.setText(u'Mean = %8.3g' % (Image['mean']))
         self.lbl_sigma.setText(u'\u03c3 = %11.3g' % (Image['std']))

@@ -3,12 +3,14 @@ from __future__ import division
 # import matplotlib
 # matplotlib.use('Qt4Agg')
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from scipy.interpolate import interp1d
 import QuickPlot
 import PhysicsBasics as pb
 from PlotValues import PlotValues
 from matplotlib.pyplot import ion
+from numba import jit, njit
 
 # ion()
 
@@ -30,7 +32,7 @@ F = interp1d(Fraw[:, 0], Fraw[:, 1], bounds_error=False, fill_value=0)
 Flux = F(E)
 Flux /= max(Flux)
 
-
+@jit
 def ComputeSpotEnergy(I, WtPct, rho, t, quiet=False):
     # I is a numpy array with I0, I1, I2, etc. where I1+ are the filtered intensities.
     # WtPct is the filter composition. (It is assumed that all filters have the same composition.
@@ -45,6 +47,11 @@ def ComputeSpotEnergy(I, WtPct, rho, t, quiet=False):
     for n in range(1, len(t)):  # Skip the first index which is unabsorbed.
         # First just get the absorption as a function of energy for incident intensity of 1.
         NormalizedCurve = DoAbsorptionFilter(E, Iin=1, WtPct=WtPct, rho=rho, AbsorptionLength=t[n])
+
+        # WtPctAtmos = np.zeros(len(WtPct))
+        # WtPctAtmos[pb.N-1] = 100
+        # NormalizedCurve = DoAbsorptionFilter(E, Iin=NormalizedCurve, WtPct=WtPctAtmos, rho=0.001225, AbsorptionLength=100000)
+
         # NormalizedCurve = CorrectDetectorProperties(E, NormalizedCurve, 50, 50, 0.001, 0.001, 350, 0.001)  # This should improve things,
         # but right now the filter thicknesses are calibrated without it.
         # Multiply that by the flux of the incident beam to get the actual light spectrum hitting the sample through each filter.
@@ -70,7 +77,7 @@ def ComputeSpotEnergy(I, WtPct, rho, t, quiet=False):
 
         # The inner loop convolves the spectrum with its own harmonics to get an apparent spectrum.
         # I.e. how intense the reflection at that energy will be.
-        NumHarmonics = 2
+        NumHarmonics = 3
         for j, Energy in enumerate(E):
             # Get the index of the 2*E, 3*E, ... harmonics.
             for n in range(NumHarmonics):
@@ -188,14 +195,18 @@ if __name__ == '__main__':
                      [-7, 7, -9],
                      [-11, 5, -7],
                      ])
+    TableI = list()
     TableEperfect = list()
     TableEfit = list()
     TableEError = list()
     TableRelError = list()
+    Tabletwotheta = list()
+    Tablechi = list()
+    Tablexy = list()
 
     for hkl in hkls:  # np.array([[-5 ,    3 ,   -3]]): #hkls:
         # Now we just compute directly from the hkl.
-        (I, Eperfect) = PlotValues(hkl, quiet=True)
+        (I, Eperfect, twotheta, chi, x, y) = PlotValues(hkl, quiet=True)
 
         # t = np.array([0, 100, 200, 300]) # Thickness with 0-3 slips each 100 um thick.
         t = np.array([0, 112, 222, 334])  # Thickness with 0-3 slips each 100 um thick.
@@ -205,30 +216,64 @@ if __name__ == '__main__':
         WtPct[pb.O - 1] = 53.26
         Efit = ComputeSpotEnergy(I, WtPct, rho, t, quiet=True)
 
+        print "twotheta = %g, chi = %g" % (twotheta, chi)
+        print "(x,y) = (%g,%g)" % (x, y)
         Eerror = np.abs(Efit - Eperfect)
         RelError = np.abs(Efit - Eperfect) / Eperfect * 100
         print "Error in energy is %g.  Relative error is %0.02f percent" % (Eerror, RelError)
 
+        TableI.append(I[0])
         TableEperfect.append(Eperfect)
         TableEfit.append(Efit)
         TableEError.append(Eerror)
         TableRelError.append(RelError)
+        Tabletwotheta.append(twotheta)
+        Tablechi.append(chi)
+        Tablexy.append((x,y))
+
 
     # Now these are populated to switch to numpy.
+    TableI = np.array(TableI)
     TableEperfect = np.array(TableEperfect) / 1000  # Convert eV to keV.
     TableEfit = np.array(TableEfit) / 1000
     TableEError = np.array(TableEError)
     TableRelError = np.array(TableRelError)
+    Tabletwotheta = np.array(Tabletwotheta)
+    Tablechi = np.array(Tablechi)
+    Tablexy = np.array(Tablexy)
 
     # Show a final figure comparing the errors against the flux curve.  Publication quality!
     FluxCurve = np.genfromtxt('../Beamline Characteristics/whitebeamflux.txt', skip_header=1)
     FluxCurve[:, 1] /= max(FluxCurve[:, 1]) / 35
     FluxCurve[:, 0] /= 1000  # Switch to keV from eV.
 
+    # Plot fit accuracy against energy
     fig, ax = QuickPlot.SpecPlot(FluxCurve, boldlevel=3, title='Flux curve compared with errors', xlabel='keV',
                                  ylabel='Points: % relative error\nCurve: flux (arbitrary units)')
     QuickPlot.QuickPlot(TableEperfect, TableRelError, figax=(fig, ax), plottype='scatter', boldlevel=5)
     plt.legend(['Flux Curve', 'Error of best fit values'])
+
+    # And plot fit accuracy against twotheta
+    fig, ax = QuickPlot.QuickPlot(Tabletwotheta, TableRelError, boldlevel=5, title='Two theta and chi compared with errors',
+                                  xlabel='Degrees', ylabel='Points: % relative error', color='blue', plottype='scatter')
+    QuickPlot.QuickPlot(Tablechi, TableRelError, figax=(fig, ax), plottype='scatter', boldlevel=5, color='red')
+    plt.legend(['Two theta', 'chi'])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(Tablexy[:,0], Tablexy[:,1], TableRelError)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+#    cax = ax.scatter(Tablexy[:,0], Tablexy[:,1], c=TableRelError, cmap='RdYlGn_r', s=150, vmin=0, vmax=10)
+    cax = ax.scatter(Tablexy[:,0], Tablexy[:,1], c=TableRelError, cmap='viridis', s=150, vmin=0, vmax=10)
+    ax.set_xlim((0,1043))
+    ax.set_ylim((0,981))
+    ax.invert_yaxis()
+    cbar = fig.colorbar(cax, ticks=[0,5,10])
+    cbar.ax.set_yticklabels(['0%', '5%', '10+%'])
+
+    QuickPlot.QuickPlot(TableI, TableRelError, boldlevel=3, title='Errors compared to counts', xlabel='Counts', ylabel='% relative error', plottype='scatter')
 
     print ("%% rel error mean = %0.02f and standard deviation: %0.02f" % (np.mean(TableRelError), np.std(TableRelError)))
 

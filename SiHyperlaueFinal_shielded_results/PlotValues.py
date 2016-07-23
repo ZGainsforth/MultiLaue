@@ -6,33 +6,50 @@ import matplotlib.pyplot as plt
 import numpy as np
 import re
 import StringIO
+import json
+import pickle
 
 # How many files are in the sequence as we move the filter arm.
 NumFiles = 150
+
+Rarray = dict()
 
 def PlotValues(hkl, quiet=False):
 
     # Intensity, energy of a given reflection as a function of file (which is position of the filter arm).
     I = np.zeros(NumFiles)
     E = np.zeros(NumFiles)
+    twotheta = np.zeros(NumFiles)
+    chi = np.zeros(NumFiles)
+    xcoord = np.zeros(NumFiles)
+    ycoord = np.zeros(NumFiles)
 
     # Loop through all the filter positions and populate the I vector.
     for i in range(1,NumFiles+1):
-        # Read in the indexation file.
-        #with open('results_00001.IND', 'r') as f:
-        with open('results_%0.5d.IND'%i, 'r') as f:
-            WholeFile = f.read()
 
-        # Pull out the chunk of the file that contains the indexation table (starts with number of indexed reflections and ends with the deviatoric stuff.
-        s = re.search('(number of indexed reflections:      [0-9]*?\r\n)([a-zA-Z0-9\s\(\)_\.-]*)( dev1, dev2)', WholeFile)
-        ReflStr = s.group(2)
+        FileName = 'results_%0.5d.IND'%i
+        try:
+            #R = pickle.load(open(FileName+'.pkl', 'rb'))
+            R = Rarray[FileName]
+        except:
+            # Read in the indexation file.
+            #with open('results_00001.IND', 'r') as f:
+            with open(FileName, 'r') as f:
+                WholeFile = f.read()
 
-        # Nobu has a typo in his files, so two columns are accidentally blended together.  Fix it.
-        ReflStr = ReflStr.replace('chi(deg)intensity', 'chi(deg) intensity')
+            # Pull out the chunk of the file that contains the indexation table (starts with number of indexed reflections and ends with the deviatoric stuff.
+            s = re.search('(number of indexed reflections:      [0-9]*?\r\n)([a-zA-Z0-9\s\(\)_\.-]*)( dev1, dev2)', WholeFile)
+            ReflStr = s.group(2)
 
-        # Now turn the text into a named numpy array.
-        ReflStr = StringIO.StringIO(ReflStr)
-        R = np.genfromtxt(ReflStr, names=True)
+            # Nobu has a typo in his files, so two columns are accidentally blended together.  Fix it.
+            ReflStr = ReflStr.replace('chi(deg)intensity', 'chi(deg) intensity')
+
+            # Now turn the text into a named numpy array.
+            ReflStr = StringIO.StringIO(ReflStr)
+            R = np.genfromtxt(ReflStr, names=True)
+            #pickle.dump(R, open(FileName+'.pkl', 'wb'))
+            Rarray[FileName] = R
+
         # Sort by hkl
         R.sort(order=('h', 'k', 'l'))
 
@@ -43,6 +60,11 @@ def PlotValues(hkl, quiet=False):
 
         I[i-1] = r['intensity']
         E[i-1] = r['EnerkeV']
+        twotheta[i-1] = r['2thetadeg']
+        chi[i-1] = r['chideg']
+        xcoord[i-1] = r['xexp']
+        ycoord[i-1] = r['yexp']
+
 
     if not quiet:
         plt.plot(I)
@@ -68,7 +90,8 @@ def PlotValues(hkl, quiet=False):
     print 'Two filters:   %g' % Intensity2
     print 'Three filters: %g' % Intensity3
 
-    return(np.array([Intensity0, Intensity1, Intensity2, Intensity3]), np.mean(E)*1000)
+    return(np.array([Intensity0, Intensity1, Intensity2, Intensity3]), np.mean(E)*1000, np.mean(twotheta), np.mean(chi), np.mean(xcoord),
+           np.mean(ycoord))
 
 if __name__ == '__main__':
     #hkl = np.array([-3, 3, -3])
