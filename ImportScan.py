@@ -7,7 +7,7 @@ import skimage.external.tifffile as tifffile
 import json
 import BasicProcessing
 import PhysicsBasics as pb
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore
 
 def WriteExampleMonoConfigFile():
     """Importing data into MultiLaue requires knowing all the beamline parameters and such.  These can be written into
@@ -121,7 +121,7 @@ def ImportScan(ConfigFile, WorkingDirectory=None, StatusFunc=None):
     elif Config['ScanInfo']['ScanType'] == 'MultiLaue':
         return ImportMultiLaueScan(Config)
     else:
-        print Config['ScanInfo']['ScanType'] + ' is an unsupported scan type.'
+        print(Config['ScanInfo']['ScanType'] + ' is an unsupported scan type.')
 
 class ImportScanThread(QtCore.QThread):
     def __init__(self, ConfigFile, WorkingDirectory=None, StatusSignal=None):
@@ -138,7 +138,7 @@ class ImportScanThread(QtCore.QThread):
         if self.StatusSignal is not None:
             self.emit(QtCore.SIGNAL(self.StatusSignal), StatusStr)
         else:
-            print StatusStr
+            print(StatusStr)
 
 
 def ImportMonoScan(Config):
@@ -154,13 +154,13 @@ def ImportMonoScan(Config):
     # All the data goes in the group "scan".
     Scan = h5.create_group('Scan')
     # The ScanInfo section of the config file is the attributes for the scan.
-    for k,v in Config['ScanInfo'].items():
+    for k,v in list(Config['ScanInfo'].items()):
         Scan.attrs[k] = v
 
     # Add a calibration group.
     Calibration = Scan.create_group('Calibration')
     # The Calibration section of the config file is the attributes for the calibration.
-    for k,v in Config['Calibration'].items():
+    for k,v in list(Config['Calibration'].items()):
         Calibration.attrs[k] = v
 
     # Make a dummy image to check if the image tranformation on import is going to change dimensions.
@@ -188,7 +188,7 @@ def ImportMonoScan(Config):
             i = y*Cube.shape[0] + x + Config['RawScanInfo']['StartIndex']
             # If the scan was aborted early, then we won't have enough images to fill the cube.
             if i > Config['RawScanInfo']['EndIndex']:
-                print 'Number of images does not completely fill the data cube.  Substituting zeros for remainder of cube.'
+                print('Number of images does not completely fill the data cube.  Substituting zeros for remainder of cube.')
                 break
 
             # Read this image in and populate the cube.
@@ -198,13 +198,13 @@ def ImportMonoScan(Config):
                     if Config['StatusFunc'] is not None:
                         Config['StatusFunc'](StatusStr)
                     else:
-                        print StatusStr
+                        print(StatusStr)
 
                     Cube[x, y, :, :] = TransformImageForDetector(T[0].asarray(), Config['ScanInfo'])
                     MetadataCube[x,y] = T[0].tags['image_description'].value
 
             except IOError:
-                print FileNameFormat % i + ' could not be found.  Substituting zeros.'
+                print(FileNameFormat % i + ' could not be found.  Substituting zeros.')
 
     # Now make the sum image (and log of the sum image) from the Cube.
     Sum, SumLog = BasicProcessing.MakeSumImage(Scan, Config['StatusFunc'])
@@ -231,13 +231,13 @@ def ImportLaueScan(Config):
     # All the data goes in the group "scan".
     Scan = h5.create_group('Scan')
     # The ScanInfo section of the config file is the attributes for the scan.
-    for k,v in Config['ScanInfo'].items():
+    for k,v in list(Config['ScanInfo'].items()):
         Scan.attrs[k] = v
 
     # Add a calibration group.
     Calibration = Scan.create_group('Calibration')
     # The Calibration section of the config file is the attributes for the calibration.
-    for k,v in Config['Calibration'].items():
+    for k,v in list(Config['Calibration'].items()):
         Calibration.attrs[k] = v
 
     # Make a dummy image to check if the image tranformation on import is going to change dimensions.
@@ -265,7 +265,7 @@ def ImportLaueScan(Config):
             i = y*Cube.shape[0] + x + Config['RawScanInfo']['StartIndex']
             # If the scan was aborted early, then we won't have enough images to fill the cube.
             if i > Config['RawScanInfo']['EndIndex']:
-                print 'Number of images does not completely fill the data cube.  Substituting zeros for remainder of cube.'
+                print('Number of images does not completely fill the data cube.  Substituting zeros for remainder of cube.')
                 break
 
             # Read this image in and populate the cube.
@@ -276,11 +276,11 @@ def ImportLaueScan(Config):
                     if Config['StatusFunc'] is not None:
                         Config['StatusFunc'](StatusStr)
                     else:
-                        print StatusStr
+                        print(StatusStr)
                     Cube[x, y, :, :] = TransformImageForDetector(T[0].asarray(), Config['ScanInfo'])
                     MetadataCube[x,y] = T[0].tags['image_description'].value
             except IOError:
-                print FileNameFormat % i + ' could not be found.  Substituting zeros.'
+                print(FileNameFormat % i + ' could not be found.  Substituting zeros.')
 
     # Now make the sum image (and log of the sum image) from the Cube.
     Sum, SumLog = BasicProcessing.MakeSumImage(Scan, Config['StatusFunc'])
@@ -304,18 +304,18 @@ def ImportMultiLaueScan(Config):
     # All the data goes in the group "scan".
     Scan = h5.create_group('Scan')
     # The ScanInfo section of the config file is the attributes for the scan.
-    for k,v in Config['ScanInfo'].items():
+    for k,v in list(Config['ScanInfo'].items()):
         Scan.attrs[k] = v
 
     # Add a calibration group.
     Calibration = Scan.create_group('Calibration')
     # The Calibration section of the config file is the attributes for the calibration.
-    for k,v in Config['Calibration'].items():
+    for k,v in list(Config['Calibration'].items()):
         Calibration.attrs[k] = v
 
     # Add the filter group (MultiLaue only).
     Filter = Scan.create_group('Filter')
-    for k,v in Config['FilterInfo'].items():
+    for k,v in list(Config['FilterInfo'].items()):
         if k == 'FilterWtPcts':
             WtPcts = np.array(v)
             FilterWtPcts = Filter.create_dataset('FilterWtPcts', data=WtPcts)
@@ -364,11 +364,11 @@ def ImportMultiLaueScan(Config):
                         if Config['StatusFunc'] is not None:
                             Config['StatusFunc'](StatusStr)
                         else:
-                            print StatusStr
+                            print(StatusStr)
                         Cube[x, y, :, :, f] = TransformImageForDetector(T[0].asarray(), Config['ScanInfo'])
                         MetadataCube[x, y, f] = T[0].tags['image_description'].value
                 except IOError:
-                    print FileNameFormat % (y+1,i+1) + ' could not be found.  Substituting zeros.'
+                    print(FileNameFormat % (y+1,i+1) + ' could not be found.  Substituting zeros.')
 
                 # Increment the frame count.
                 n += 1

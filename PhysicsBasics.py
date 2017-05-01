@@ -1,4 +1,4 @@
-from __future__ import division
+
 #numpy.set_printoptions(threshold=numpy.nan) # Makes arrays print fully when they are large.
 from collections import OrderedDict
 
@@ -167,4 +167,4 @@ ElementalWeights = [0, 1.00794, 4.002602, 6.941, 9.012182, 10.811, 12.0107, 14.0
        244, 247, 247, 251, 0, 0, 0, 259, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 # And the end all cooleset thing in the world is an ordered dictionary that has El: Z, weight
-ElementDict= OrderedDict(zip(ElementalSymbols, zip(range(0, MAXELEMENT), ElementalWeights)))
+ElementDict= OrderedDict(list(zip(ElementalSymbols, list(zip(list(range(0, MAXELEMENT)), ElementalWeights)))))

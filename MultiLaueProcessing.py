@@ -1,5 +1,5 @@
 # Created 2016, Zack Gainsforth
-from __future__ import division
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
@@ -10,7 +10,7 @@ import time
 from AbsorptionCorrection import DoAbsorptionFilter, CorrectDetectorProperties
 from multiprocessing import Pool
 from BasicProcessing import LoadScan
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore
 
 ### Initialization code for MultiLaue
 
@@ -117,7 +117,7 @@ def ComputeSpotEnergy(I, BeamlineRatioSpectra):
     Iratio = I.copy().astype('float')
     Iratio[:] /= Iratio[0]
     if not quiet:
-        print Iratio
+        print(Iratio)
 
     # And compare them against the apparent intensity ratio curves.
     RatioComparison = Iratio[:,np.newaxis]-BeamlineRatioSpectra
@@ -126,14 +126,14 @@ def ComputeSpotEnergy(I, BeamlineRatioSpectra):
         plt.figure()
         plt.plot(E, FitVal)
         plt.hold(True)
-        print RatioComparison.shape
+        print(RatioComparison.shape)
         for i in range(len(I)):
             plt.plot(E, RatioComparison[i,:])
         plt.title('Fit energy')
         plt.legend(['Best Fit'] + [str(i) for i in range(len(I))])
 
         # Print the best fit energy
-        print "Best fit energy is %g eV with fit value %g" % (E[np.argmin(FitVal)], FitVal[np.argmin(FitVal)])
+        print("Best fit energy is %g eV with fit value %g" % (E[np.argmin(FitVal)], FitVal[np.argmin(FitVal)]))
 
     ind = np.argmin(FitVal)
     return E[ind], FitVal[ind]
@@ -160,7 +160,7 @@ def MakeMultiLaueEnergyCube(Scan, StatusFunc=None):
     Cube = Scan['DataCube']
 
     # Remove any datasets we are going to compute in case we are recomputing.
-    for k in Scan.keys():
+    for k in list(Scan.keys()):
         if k in ['EnergyCube', 'EnergyFitValCube', 'BeamlineFluxEnergies', 'BeamlineFlux', 'BeamlineFilteredSpectra', 'BeamlineApparentSpectra', 'BeamlineApparentRatioSpectra']:
             del Scan[k]
 
@@ -206,7 +206,7 @@ def MakeMultiLaueEnergyCube(Scan, StatusFunc=None):
         if StatusFunc is not None:
             StatusFunc(StatusStr)
         else:
-            print StatusStr
+            print(StatusStr)
 
         for x in range(Cube.shape[0]):
             # Get all the Laues for this image from the HDF5 at once.
@@ -245,7 +245,7 @@ class ProcessMultiLaueThread(QtCore.QThread):
         if self.StatusSignal is not None:
             self.emit(QtCore.SIGNAL(self.StatusSignal), StatusStr)
         else:
-            print StatusStr
+            print(StatusStr)
 
 def TestAgainstSilicon():
     # Reflection (-3,3,-3) with energy 8.44862 has intensities:
@@ -324,7 +324,7 @@ def TestAgainstSilicon():
 
         Eerror = np.abs(Efit - Eperfect)
         RelError = np.abs(Efit - Eperfect) / Eperfect * 100
-        print "Error in energy is %g.  Relative error is %0.02f percent" % (Eerror, RelError)
+        print("Error in energy is %g.  Relative error is %0.02f percent" % (Eerror, RelError))
 
         TableEperfect.append(Eperfect)
         TableEfit.append(Efit)
@@ -346,13 +346,13 @@ def TestAgainstSilicon():
     QuickPlot.QuickPlot(TableEperfect,TableRelError, figax=(fig,ax), plottype='scatter', boldlevel=5)
     plt.legend(['Flux Curve', 'Error of best fit values'])
 
-    print ("%% rel error mean = %0.02f and standard deviation: %0.02f" % (np.mean(TableRelError), np.std(TableRelError)))
+    print(("%% rel error mean = %0.02f and standard deviation: %0.02f" % (np.mean(TableRelError), np.std(TableRelError))))
 
-    print TableEfit
+    print(TableEfit)
     Keepers = (TableEfit>11) & (TableEfit<21)
-    print Keepers
+    print(Keepers)
 
-    print ("%% rel error mean = %0.02f and standard deviation: %0.02f in region 11-21 keV" % (np.mean(TableRelError[Keepers]), np.std(TableRelError[Keepers])))
+    print(("%% rel error mean = %0.02f and standard deviation: %0.02f in region 11-21 keV" % (np.mean(TableRelError[Keepers]), np.std(TableRelError[Keepers]))))
 
     def raise_window(figname=None):
         if figname: plt.figure(figname)

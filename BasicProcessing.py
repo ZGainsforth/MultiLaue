@@ -16,7 +16,7 @@ def LoadScan(HDF5FileName, readwrite=False):
 
 
     # Make sure this is a version we can read.
-    assert f.attrs['MultiLaueVersion'] == '1.0', 'MultiLaue only supports version 1.0 currently.'
+    assert f.attrs['MultiLaueVersion'] == b'1.0', 'MultiLaue only supports version 1.0 currently.'
 
     # Get the scan group.
     Scan = f['Scan']
@@ -36,7 +36,7 @@ def MakeSumImageParallelY(RowNumber, NumberOfData, DataQueue, DoneQueue):
     for i in range(NumberOfData):
         x.append(DataQueue.get())
 
-    print 'Proc %d got %d images' % (RowNumber, len(x))
+    print('Proc %d got %d images' % (RowNumber, len(x)))
 
     Sum = np.sum(np.array(x), axis=0)
 
@@ -104,7 +104,7 @@ def MakeSumImage(Scan, StatusFunc=None):
             if StatusFunc is not None:
                 StatusFunc(StatusStr)
             else:
-                print StatusStr
+                print(StatusStr)
 
             if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
                 # The sum image of a Laue scan is the sum of each frame.
@@ -147,7 +147,7 @@ def MakeStDevImage(Scan, StatusFunc=None):
             if StatusFunc is not None:
                 StatusFunc(StatusStr)
             else:
-                print StatusStr
+                print(StatusStr)
 
             if Scan.attrs['ScanType'] in ['Laue', 'Mono']:
                 StDev += (Cube[x, y, :, :] - MeanImage) ** 2

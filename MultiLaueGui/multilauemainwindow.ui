@@ -136,8 +136,15 @@
     <addaction name="actionAbout_MultiLaue"/>
     <addaction name="actionOpen_GitHub_Website"/>
    </widget>
+   <widget class="QMenu" name="menuProcess">
+    <property name="title">
+     <string>Process</string>
+    </property>
+    <addaction name="actionPowder_Integrate"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menuHelp"/>
+   <addaction name="menuProcess"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -238,6 +245,11 @@
    </property>
    <property name="iconVisibleInMenu">
     <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionPowder_Integrate">
+   <property name="text">
+    <string>Powder Integrate</string>
    </property>
   </action>
  </widget>

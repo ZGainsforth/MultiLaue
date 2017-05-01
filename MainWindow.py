@@ -7,16 +7,17 @@ os.environ['QT_API'] = 'pyqt'
 import numpy as np
 from MultiLaueGUI import Ui_MultiLaueMainWindow
 from AboutBox import Ui_AboutDialog
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 from skimage.external.tifffile import imsave
 import json
 import matplotlib
 from DetectorGeometry import DetectorGeometry
 
-matplotlib.use('Qt4Agg')
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+matplotlib.use('Qt5Agg')
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 
 from ImportScan import ImportScanThread
 import BasicProcessing
@@ -25,7 +26,7 @@ from DataReadout import Ui_DataReadout
 from collections import OrderedDict
 
 
-class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
+class DataReadoutControl(QtWidgets.QWidget, Ui_DataReadout):
     def __init__(self, parent=None):
         super(DataReadoutControl, self).__init__()
         self.setupUi(self)
@@ -40,7 +41,7 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
         self.txtMax.setFixedWidth(pixWide)
 
         # Figure out the height of the greek symbols (not the same as english) and format all the labels to be the larger height.
-        TestStr = u'\u03c7 = '
+        TestStr = '\u03c7 = '
         pixWide = fm.width(TestStr)
         pixHeight = fm.height()
         self.lbl_x.setFixedHeight(pixHeight)
@@ -192,10 +193,10 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
 
             (d, twotheta, chi) = self.get_d_twotheta_chi(x, y, Energy)
             if d is not None:
-                self.lbl_d.setText(u'd = %9.3g \u212B' % d)
+                self.lbl_d.setText('d = %9.3g \u212B' % d)
             else:
-                self.lbl_d.setText(u'd =        n/a')
-            self.lbl_twotheta.setText(u'2\u03b8 = %5.3g deg' % twotheta)
+                self.lbl_d.setText('d =        n/a')
+            self.lbl_twotheta.setText('2\u03b8 = %5.3g deg' % twotheta)
             #self.lbl_chi.setText(u'\u03c7 = %4.3g deg' % chi)
             self.lbl_chi.setText('')
 
@@ -203,12 +204,12 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
             self.lbl_FitVal.setText('{:>14s}'.format(' '))
             (d, twotheta, chi) = self.get_d_twotheta_chi(x, y, None)
             self.lbl_d.setText('') # We can only get d for energy images.
-            self.lbl_twotheta.setText(u'2\u03b8 = %5.3g deg' % twotheta)
+            self.lbl_twotheta.setText('2\u03b8 = %5.3g deg' % twotheta)
             #self.lbl_chi.setText(u'\u03c7 = %4.3g deg' % chi)
             self.lbl_chi.setText('')
 
-        self.lbl_mean.setText(u'Mean = %8.3g' % (Image['mean']))
-        self.lbl_sigma.setText(u'\u03c3 = %11.3g' % (Image['std']))
+        self.lbl_mean.setText('Mean = %8.3g' % (Image['mean']))
+        self.lbl_sigma.setText('\u03c3 = %11.3g' % (Image['std']))
 
         if np.abs(Image['vlim'][0]) < 10000:
             self.txtMin.setText('{:>10.2f}'.format(Image['vlim'][0]))
@@ -222,7 +223,7 @@ class DataReadoutControl(QtGui.QWidget, Ui_DataReadout):
     def AutoScaleButton(self):
         self.parent.DoAutoScale()
 
-class MplCanvas(FigureCanvas, QtGui.QWidget):
+class MplCanvas(FigureCanvas, QtWidgets.QWidget):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
 
     def __init__(self, parent=None, width=3, height=3, dpi=1200):
@@ -240,8 +241,8 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         self.parent = parent
 
         FigureCanvas.setSizePolicy(self,
-                                   QtGui.QSizePolicy.Expanding,
-                                   QtGui.QSizePolicy.Expanding)
+                                   QtWidgets.QSizePolicy.Expanding,
+                                   QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
     def AfterInitialize(self, ComboBox, Toolbar, DataReadout):
@@ -303,7 +304,7 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         self.ComboBox.clear()
 
         # Now, populate data structures.
-        for ImageKey, Image in self.Images.items():
+        for ImageKey, Image in list(self.Images.items()):
             if 'Shape' not in self.CanvasViewSettings:
                 # Make settings for viewing the image that apply to all images on this canvas based on the first image.
                 shape = Image['ImageData'].shape
@@ -330,7 +331,7 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         # self.DataReadout.setxy(0,0)
 
     def SetCurrentImage(self, ImageKey):
-        assert ImageKey in self.Images.keys(), 'Cannot set to image %s -- not in the list for this canvas.' % ImageKey
+        assert ImageKey in list(self.Images.keys()), 'Cannot set to image %s -- not in the list for this canvas.' % ImageKey
         self.CanvasViewSettings['CurrentImageKey'] = ImageKey
         self.plotImage()
         # self.ResetFigureZoom() # Note this includes a redraw.
@@ -343,6 +344,35 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
         Image['std'] = np.std(Image['ImageData'])
         Image['vlim'] = self.GetAutoScale(Image) #np.array([Image['mean'] - 2 * Image['std'], Image['mean'] + 2 * Image['std']])
         return
+
+    def GetPowderIntegration(self):
+        try:
+            EnergyData = self.Images['Energy']['ImageData']
+            LaueData = self.Images['Linear']['ImageData']
+        except:
+            return None
+
+        Integration = list()
+        for m in range(EnergyData.shape[0]):
+            for n in range(EnergyData.shape[1]):
+                E = EnergyData[m,n]
+                if 10000 < E < 20000:
+                    (d, twotheta, chi) = self.DataReadout.get_d_twotheta_chi(n,m,E)
+                    Integration.append([d, twotheta, LaueData[m,n]])
+
+        I = np.array(Integration)
+
+        d = plt.hist(I[:, 0], bins=200, weights=I[:, 2] / 20000)
+        d = np.vstack([d[1][:-1], d[0]])
+        twotheta = plt.hist(I[:, 1], bins=200, weights=I[:, 2] / 20000)
+        twotheta = np.vstack([twotheta[1][:-1], twotheta[0]])
+        np.savetxt('/Users/Zack/Desktop/d.txt', d.T)
+        np.savetxt('/Users/Zack/Desktop/twotheta.txt', twotheta.T)
+
+        print("Powder Integration done.")
+
+
+        #print Integration
 
     def GetAutoScale(self, Image):
         # Energy images are different.  Most of the pixels are 0.  So we're going to treat them as nan and then compute.
@@ -414,13 +444,13 @@ class MplCanvas(FigureCanvas, QtGui.QWidget):
             # print event.xdata, event.ydata
 
 
-class AboutBoxDialog(QtGui.QDialog, Ui_AboutDialog):
+class AboutBoxDialog(QtWidgets.QDialog, Ui_AboutDialog):
     def __init__(self):
         super(AboutBoxDialog, self).__init__()
         self.setupUi(self)
 
 
-class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
+class Main(QtWidgets.QMainWindow, Ui_MultiLaueMainWindow):
     def __init__(self):
         super(Main, self).__init__()
         self.setupUi(self)
@@ -433,7 +463,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.canvasSumImage = MplCanvas(self, width=5, height=4, dpi=100)
         self.toolbarSumImage = NavigationToolbar(self.canvasSumImage, self.widgetMain)
         self.datareadoutSumImage = DataReadoutControl(self.canvasSumImage)
-        self.comboSumImage = QtGui.QComboBox()
+        self.comboSumImage = QtWidgets.QComboBox()
         self.layoutSumImage.addWidget(self.datareadoutSumImage)
         self.layoutSumImage.addWidget(self.canvasSumImage)
         self.layoutSumImage.addWidget(self.toolbarSumImage)
@@ -445,7 +475,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.canvasSingleImage = MplCanvas(self, width=5, height=4, dpi=100)
         self.toolbarSingleImage = NavigationToolbar(self.canvasSingleImage, self.widgetMain)
         self.datareadoutSingleImage = DataReadoutControl(self.canvasSingleImage)
-        self.comboSingleImage = QtGui.QComboBox()
+        self.comboSingleImage = QtWidgets.QComboBox()
         self.layoutSingleImage.addWidget(self.datareadoutSingleImage)
         self.layoutSingleImage.addWidget(self.canvasSingleImage)
         self.layoutSingleImage.addWidget(self.toolbarSingleImage)
@@ -456,7 +486,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.canvasTopograph = MplCanvas(self, width=5, height=4, dpi=100)
         self.toolbarTopograph = NavigationToolbar(self.canvasTopograph, self.widgetMain)
         self.datareadoutTopograph = DataReadoutControl(self.canvasTopograph)
-        self.comboTopograph = QtGui.QComboBox()
+        self.comboTopograph = QtWidgets.QComboBox()
         self.layoutTopograph.addWidget(self.datareadoutTopograph)
         self.layoutTopograph.addWidget(self.canvasTopograph)
         self.layoutTopograph.addWidget(self.toolbarTopograph)
@@ -482,6 +512,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         self.actionClose.triggered.connect(self.CloseScan)
         self.actionOpen_GitHub_Website.triggered.connect(self.OpenGitHub)
         self.actionAbout_MultiLaue.triggered.connect(self.CallAboutBox)
+        self.actionPowder_Integrate.triggered.connect(self.PowderIntegrate)
 
         # Connect the combo boxes to their images.
         self.comboSumImage.currentIndexChanged.connect(self.comboSumImage_Changed)
@@ -550,11 +581,15 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
     def GetSingleImageCanvas(self):
         return self.canvasSingleImage
 
+    def PowderIntegrate(self):
+        print('aloha oy!')
+        PI = self.canvasSingleImage.GetPowderIntegration()
+
     def OpenScan(self):
 
         # Get the name of the file to open from the user.  Move to the default path (i.e. the last one used by the user) so the dialogs are all staying within the same directory.
         FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], '*.hdf5')
-        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.', directory=FileName,
+        FileName, _ = QtWidgets.QFileDialog.getOpenFileName(self, caption='Open Scan file.', directory=FileName,
                                                      filter='HDF5 files (*.hdf5);;All files (*.*)')
         if FileName != '':
             self.CloseScan(quiet=True)
@@ -600,8 +635,8 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             # Set the default filename to the type of image (SumImage, etc...)
             FileName = os.path.join(self.Defaults['DefaultFileDialogDir'],
                                     str((self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString()) + '.tif'))
-            Opts = QtGui.QFileDialog.Option(0x40)  # QtGui.QFileDialog.HideNameFilterDetails
-            FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
+            Opts = QtWidgets.QFileDialog.Option(0x40)  # QtWidgets.QFileDialog.HideNameFilterDetails
+            FileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
                                                          filter='TIF image (*.tif);;All files(*.*)', options=Opts)
         if FileName != '':
             # Store the default path now that the user has selected a file.
@@ -614,8 +649,8 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             # Set the default filename to the type of image (SumImage, etc...)
             FileName = os.path.join(self.Defaults['DefaultFileDialogDir'],
                                     str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()).toString()) + '.tif')
-            Opts = QtGui.QFileDialog.Option(0x40)  # QtGui.QFileDialog.HideNameFilterDetails
-            FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save Topograph Image.', directory=FileName,
+            Opts = QtWidgets.QFileDialog.Option(0x40)  # QtWidgets.QFileDialog.HideNameFilterDetails
+            FileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save Topograph Image.', directory=FileName,
                                                          filter='TIF image (*.tif);;All files(*.*)', options=Opts)
         if FileName != '':
             # Store the default path now that the user has selected a file.
@@ -628,8 +663,8 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             # Set the default filename to the type of image (SumImage, etc...)
             FileName = os.path.join(self.Defaults['DefaultFileDialogDir'],
                                     str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString()) + '.tif')
-            Opts = QtGui.QFileDialog.Option(0x40)  # QtGui.QFileDialog.HideNameFilterDetails
-            FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
+            Opts = QtWidgets.QFileDialog.Option(0x40)  # QtWidgets.QFileDialog.HideNameFilterDetails
+            FileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
                                                          filter='TIF image (*.tif);;All files(*.*)', options=Opts)
         if FileName != '':
             # Store the default path now that the user has selected a file.
@@ -647,7 +682,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
                                       QtGui.QMessageBox.NoButton, QtGui.QMessageBox.Warning)
             return
 
-        FileName = QtGui.QFileDialog.getSaveFileName(self, caption='Save All Three Images.', directory=FileName,
+        FileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save All Three Images.', directory=FileName,
                                                      filter='TIF image (*.tif);;All files(*.*)')
 
         if FileName != '':
@@ -677,7 +712,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             return
 
         FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], '*.json')
-        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan configuration file.', directory=FileName,
+        FileName, _ = QtWidgets.QFileDialog.getOpenFileName(self, caption='Open Scan configuration file.', directory=FileName,
                                                      filter='JSON files (*.json);;All files (*.*)')
 
         if FileName != '':
@@ -711,7 +746,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
             return
 
         FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], '*.hdf5')
-        FileName = QtGui.QFileDialog.getOpenFileName(self, caption='Open Scan file.', directory=FileName,
+        FileName, _ = QtWidgets.QFileDialog.getOpenFileName(self, caption='Open Scan file.', directory=FileName,
                                                      filter='HDF5 files (*.hdf5);;All files (*.*)')
 
         if FileName != '':
@@ -733,13 +768,13 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
                 self.MultiLaueThread.run()
 
     def ProcessMultiLaueFinished(self):
-        print 'ProcessMultiLaueFinished called'
+        print('ProcessMultiLaueFinished called')
         self.MultiLaueThread = None
 
     def comboSumImage_Changed(self):
         # Note the current zoom settings.
         shape, xlim, ylim = self.canvasSumImage.NoteFigureZoom()
-        WhichImage = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString())
+        WhichImage = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()))
         if WhichImage == '':
             return
         self.canvasSumImage.SetCurrentImage(WhichImage)
@@ -750,7 +785,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
     def comboTopograph_Changed(self):
         # Note the current zoom settings.
         shape, xlim, ylim = self.canvasTopograph.NoteFigureZoom()
-        WhichImage = str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()).toString())
+        WhichImage = str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()))
         if WhichImage == '':
             return
         self.canvasTopograph.SetCurrentImage(WhichImage)
@@ -763,7 +798,7 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
         shape, xlim, ylim = self.canvasSingleImage.NoteFigureZoom()
 
         # Now switch the image to the one just selected.
-        WhichImage = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString())
+        WhichImage = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()))
         if WhichImage == '':
             return
         # if WhichImage == 'Linear':
@@ -848,11 +883,11 @@ class Main(QtGui.QMainWindow, Ui_MultiLaueMainWindow):
 
             self.statusBar.showMessage('Picked single image from topograph from coordinate (x,y)=(%d,%d)' % Coord[0:2])
         if Canvas == self.canvasSingleImage:
-            print "Single Image Click not implemented."
+            print("Single Image Click not implemented.")
 
 
 if __name__ == '__main__':
-    QtApp = QtGui.QApplication(sys.argv)
+    QtApp = QtWidgets.QApplication(sys.argv)
     QtApp.setApplicationName('MultiLaue')
 
     # # Check if we're on OS X, first.
