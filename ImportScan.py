@@ -124,11 +124,12 @@ def ImportScan(ConfigFile, WorkingDirectory=None, StatusFunc=None):
         print(Config['ScanInfo']['ScanType'] + ' is an unsupported scan type.')
 
 class ImportScanThread(QtCore.QThread):
-    def __init__(self, ConfigFile, WorkingDirectory=None, StatusSignal=None):
+    StatusSignal = QtCore.pyqtSignal(object)
+
+    def __init__(self, ConfigFile, WorkingDirectory=None):
         QtCore.QThread.__init__(self)
         self.ConfigFile = ConfigFile
         self.WorkingDirectory = WorkingDirectory
-        self.StatusSignal = StatusSignal
 
     def run(self):
         ImportScan(self.ConfigFile, self.WorkingDirectory, self.StatusFunc)
@@ -136,7 +137,8 @@ class ImportScanThread(QtCore.QThread):
 
     def StatusFunc(self, StatusStr):
         if self.StatusSignal is not None:
-            self.emit(QtCore.SIGNAL(self.StatusSignal), StatusStr)
+            self.StatusSignal.emit(StatusStr)
+            #self.emit(QtCore.SIGNAL(self.StatusSignal), StatusStr)
         else:
             print(StatusStr)
 
@@ -330,7 +332,7 @@ def ImportMultiLaueScan(Config):
     CubeShape = (Config['ScanInfo']['xPixels'], Config['ScanInfo']['yPixels'], DummyImage.shape[0], DummyImage.shape[1],
                  Config['FilterInfo']['NumberOfPositions'])
     # Note compression greatly speeds up the later processing since these stacks are mostly IO bound.  (Factor of 4 compression is a 4X performance gain!)
-    Cube = Scan.create_dataset('DataCube', shape=CubeShape, dtype='float32', chunks=(1,1,200,200,4), compression='gzip')#, compression_opts=7) # Compression 7 will improve by 10% but take waaay longer for the first import.
+    Cube = Scan.create_dataset('DataCube', shape=CubeShape, dtype='float32', chunks=(1,1,200,200,Config['FilterInfo']['NumberOfPositions']), compression='gzip')#, compression_opts=7) # Compression 7 will improve by 10% but take waaay longer for the first import.
 
     # We also have a grid for the metadata stored in each tiff file.
     # The metadata has stage pixels, and filter pixels, so 3D.
@@ -357,7 +359,11 @@ def ImportMultiLaueScan(Config):
                 # Compute the index of this image.  It is the x coordinate x the filter (x1,f1, x1,f2, x2,f1, x2,f2, x3,f1 ...)
                 i = x*FilterPositions + f
 
-                FullPath = os.path.join(FilePath, LineDirectoryFormat%(y+1), FileNameFormat % (y+1, i+1))
+                if Cube.shape[1] == Cube.shape[0] == 1:
+                    # Single pixel scans have a different directory structure since we don't need each line in a separate directory.
+                    FullPath = os.path.join(FilePath, LineDirectoryFormat, FileNameFormat%(i+1))
+                else:
+                    FullPath = os.path.join(FilePath, LineDirectoryFormat%(y+1), FileNameFormat % (y+1, i+1))
                 try:
                     with tifffile.TiffFile(FullPath) as T:
                         StatusStr = "Loading image: x=%d, y=%d, f=%d, Frame # %d of %d" % (x, y, f, n, NumImages)

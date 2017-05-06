@@ -227,11 +227,11 @@ def MakeMultiLaueEnergyCube(Scan, StatusFunc=None):
 
 
 class ProcessMultiLaueThread(QtCore.QThread):
+    StatusSignal = QtCore.pyqtSignal(object)
 
-    def __init__(self, FileName, StatusSignal=None):
+    def __init__(self, FileName):
         QtCore.QThread.__init__(self)
         self.FileName = FileName
-        self.StatusSignal = StatusSignal
 
     def run(self):
         f, Scan = LoadScan(self.FileName, readwrite=True)
@@ -243,7 +243,8 @@ class ProcessMultiLaueThread(QtCore.QThread):
 
     def StatusFunc(self, StatusStr):
         if self.StatusSignal is not None:
-            self.emit(QtCore.SIGNAL(self.StatusSignal), StatusStr)
+            self.StatusSignal.emit(StatusStr)
+            #self.emit(QtCore.SIGNAL(self.StatusSignal), StatusStr)
         else:
             print(StatusStr)
 

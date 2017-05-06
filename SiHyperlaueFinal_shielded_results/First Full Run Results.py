@@ -1,5 +1,5 @@
 # Created 2016, Zack Gainsforth
-from __future__ import division
+
 import matplotlib.pyplot as plt
 import numpy as np
 import QuickPlot
@@ -71,14 +71,14 @@ E = np.array([12230,
 20150,
 21580])
 
-print ("%% rel error mean = %0.02f and standard deviation: %0.02f" % (np.mean(Err), np.std(Err)))
+print(("%% rel error mean = %0.02f and standard deviation: %0.02f" % (np.mean(Err), np.std(Err))))
 
 11000, 23000
 
 Keepers = (E>11000) & (E<23000)
-print Keepers
+print(Keepers)
 
-print ("%% rel error mean = %0.02f and standard deviation: %0.02f in region 11-23 keV" % (np.mean(Err[Keepers]), np.std(Err[Keepers])))
+print(("%% rel error mean = %0.02f and standard deviation: %0.02f in region 11-23 keV" % (np.mean(Err[Keepers]), np.std(Err[Keepers]))))
 
 
 Fraw = np.genfromtxt('../Beamline Characteristics/whitebeamflux.txt', skip_header=1)

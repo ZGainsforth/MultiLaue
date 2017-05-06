@@ -16,7 +16,7 @@ def LoadScan(HDF5FileName, readwrite=False):
 
 
     # Make sure this is a version we can read.
-    assert f.attrs['MultiLaueVersion'] == b'1.0', 'MultiLaue only supports version 1.0 currently.'
+    assert f.attrs['MultiLaueVersion'] == '1.0', 'MultiLaue only supports version 1.0 currently.'
 
     # Get the scan group.
     Scan = f['Scan']

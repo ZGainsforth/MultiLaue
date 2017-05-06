@@ -1,11 +1,11 @@
 # Created 2016, Zack Gainsforth
-from __future__ import division
+
 # import matplotlib
 # #matplotlib.use('Qt4Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import re
-import StringIO
+import io
 import json
 import pickle
 
@@ -42,10 +42,10 @@ def PlotValues(hkl, quiet=False):
             ReflStr = s.group(2)
 
             # Nobu has a typo in his files, so two columns are accidentally blended together.  Fix it.
-            ReflStr = ReflStr.replace('chi(deg)intensity', 'chi(deg) intensity')
+            ReflStr = unicode(ReflStr.replace('chi(deg)intensity', 'chi(deg) intensity'))
 
             # Now turn the text into a named numpy array.
-            ReflStr = StringIO.StringIO(ReflStr)
+            ReflStr = io.StringIO(ReflStr)
             R = np.genfromtxt(ReflStr, names=True)
             #pickle.dump(R, open(FileName+'.pkl', 'wb'))
             Rarray[FileName] = R
@@ -84,11 +84,11 @@ def PlotValues(hkl, quiet=False):
     # Intensity2 = I[62:91].mean()
     # Intensity3 = I[96:147].mean()
 
-    print '\nReflection (%d,%d,%d) with energy %g has intensities:' % (hkl[0], hkl[1], hkl[2], E.mean())
-    print 'No filter:     %g' % Intensity0
-    print 'One filter:    %g' % Intensity1
-    print 'Two filters:   %g' % Intensity2
-    print 'Three filters: %g' % Intensity3
+    print('\nReflection (%d,%d,%d) with energy %g has intensities:' % (hkl[0], hkl[1], hkl[2], E.mean()))
+    print('No filter:     %g' % Intensity0)
+    print('One filter:    %g' % Intensity1)
+    print('Two filters:   %g' % Intensity2)
+    print('Three filters: %g' % Intensity3)
 
     return(np.array([Intensity0, Intensity1, Intensity2, Intensity3]), np.mean(E)*1000, np.mean(twotheta), np.mean(chi), np.mean(xcoord),
            np.mean(ycoord))
@@ -98,4 +98,4 @@ if __name__ == '__main__':
     #hkl = np.array([-2, 4, -2])
     hkl = np.array([-5, 5, -3])
 
-    print PlotValues(hkl)
+    print(PlotValues(hkl))

@@ -1,5 +1,5 @@
 # Created 2016, Zack Gainsforth
-from __future__ import division
+
 # import matplotlib
 # matplotlib.use('Qt4Agg')
 import matplotlib.pyplot as plt
@@ -114,7 +114,7 @@ def ComputeSpotEnergy(I, WtPct, rho, t, quiet=False):
     # Now compute the ratio intensities measured.
     Iratio = I.copy().astype('float')
     Iratio[:] /= Iratio[0]
-    print Iratio
+    print(Iratio)
 
     # And compare them against the apparent intensity ratio curves.
     RatioComparison = Iratio[:, np.newaxis] - ApparentRatioSpectrum
@@ -122,7 +122,7 @@ def ComputeSpotEnergy(I, WtPct, rho, t, quiet=False):
     if not quiet:
         plt.figure()
         plt.plot(E, FitVal)
-        print RatioComparison.shape
+        print(RatioComparison.shape)
         plt.plot(E, RatioComparison[0, :])
         plt.plot(E, RatioComparison[1, :])
         plt.plot(E, RatioComparison[2, :])
@@ -131,7 +131,7 @@ def ComputeSpotEnergy(I, WtPct, rho, t, quiet=False):
         plt.legend(['Best fit curve', 'No Filter', 'One Filter', 'Two filters', 'Three filters'])
 
     # Print the best fit energy
-    print "Best fit energy is %g eV" % E[np.argmin(FitVal)]
+    print("Best fit energy is %g eV" % E[np.argmin(FitVal)])
 
     return E[np.argmin(FitVal)]
 
@@ -216,11 +216,11 @@ if __name__ == '__main__':
         WtPct[pb.O - 1] = 53.26
         Efit = ComputeSpotEnergy(I, WtPct, rho, t, quiet=True)
 
-        print "twotheta = %g, chi = %g" % (twotheta, chi)
-        print "(x,y) = (%g,%g)" % (x, y)
+        print("twotheta = %g, chi = %g" % (twotheta, chi))
+        print("(x,y) = (%g,%g)" % (x, y))
         Eerror = np.abs(Efit - Eperfect)
         RelError = np.abs(Efit - Eperfect) / Eperfect * 100
-        print "Error in energy is %g.  Relative error is %0.02f percent" % (Eerror, RelError)
+        print("Error in energy is %g.  Relative error is %0.02f percent" % (Eerror, RelError))
 
         TableI.append(I[0])
         TableEperfect.append(Eperfect)
@@ -275,14 +275,14 @@ if __name__ == '__main__':
 
     QuickPlot.QuickPlot(TableI, TableRelError, boldlevel=3, title='Errors compared to counts', xlabel='Counts', ylabel='% relative error', plottype='scatter')
 
-    print ("%% rel error mean = %0.02f and standard deviation: %0.02f" % (np.mean(TableRelError), np.std(TableRelError)))
+    print(("%% rel error mean = %0.02f and standard deviation: %0.02f" % (np.mean(TableRelError), np.std(TableRelError))))
 
-    print TableEfit
+    print(TableEfit)
     Keepers = (TableEfit > 11) & (TableEfit < 21)
-    print Keepers
+    print(Keepers)
 
-    print ("%% rel error mean = %0.02f and standard deviation: %0.02f in region 11-21 keV" % (
-        np.mean(TableRelError[Keepers]), np.std(TableRelError[Keepers])))
+    print(("%% rel error mean = %0.02f and standard deviation: %0.02f in region 11-21 keV" % (
+        np.mean(TableRelError[Keepers]), np.std(TableRelError[Keepers]))))
 
 
     def raise_window(figname=None):

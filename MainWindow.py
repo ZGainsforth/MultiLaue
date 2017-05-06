@@ -634,7 +634,7 @@ class Main(QtWidgets.QMainWindow, Ui_MultiLaueMainWindow):
         if FileName is None or FileName == False:
             # Set the default filename to the type of image (SumImage, etc...)
             FileName = os.path.join(self.Defaults['DefaultFileDialogDir'],
-                                    str((self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString()) + '.tif'))
+                                    str((self.comboSumImage.itemData(self.comboSumImage.currentIndex())) + '.tif'))
             Opts = QtWidgets.QFileDialog.Option(0x40)  # QtWidgets.QFileDialog.HideNameFilterDetails
             FileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
                                                          filter='TIF image (*.tif);;All files(*.*)', options=Opts)
@@ -648,7 +648,7 @@ class Main(QtWidgets.QMainWindow, Ui_MultiLaueMainWindow):
         if FileName is None or FileName == False:
             # Set the default filename to the type of image (SumImage, etc...)
             FileName = os.path.join(self.Defaults['DefaultFileDialogDir'],
-                                    str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()).toString()) + '.tif')
+                                    str(self.comboTopograph.itemData(self.comboTopograph.currentIndex())) + '.tif')
             Opts = QtWidgets.QFileDialog.Option(0x40)  # QtWidgets.QFileDialog.HideNameFilterDetails
             FileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save Topograph Image.', directory=FileName,
                                                          filter='TIF image (*.tif);;All files(*.*)', options=Opts)
@@ -659,10 +659,11 @@ class Main(QtWidgets.QMainWindow, Ui_MultiLaueMainWindow):
             imsave(FileName, self.canvasTopograph.ImageData[:].astype('float32'))
 
     def SaveSingleImage(self, FileName=None):
+        WhichImage = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()))
+
         if FileName is None or FileName == False:
             # Set the default filename to the type of image (SumImage, etc...)
-            FileName = os.path.join(self.Defaults['DefaultFileDialogDir'],
-                                    str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString()) + '.tif')
+            FileName = os.path.join(self.Defaults['DefaultFileDialogDir'], WhichImage + '.tif')
             Opts = QtWidgets.QFileDialog.Option(0x40)  # QtWidgets.QFileDialog.HideNameFilterDetails
             FileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption='Save Aggregate Image.', directory=FileName,
                                                          filter='TIF image (*.tif);;All files(*.*)', options=Opts)
@@ -670,7 +671,8 @@ class Main(QtWidgets.QMainWindow, Ui_MultiLaueMainWindow):
             # Store the default path now that the user has selected a file.
             self.Defaults['DefaultFileDialogDir'], _ = os.path.split(str(FileName))
             # Write the image file to disk.
-            imsave(FileName, self.canvasSingleImage.ImageData[:].astype('float32'))
+            #imsave(FileName, self.canvasSingleImage.ImageData[:].astype('float32'))
+            imsave(FileName, self.canvasSingleImage.Images[WhichImage]['ImageData'].astype('float32'))
 
     def SaveThreeImages(self):
         try:
@@ -689,9 +691,9 @@ class Main(QtWidgets.QMainWindow, Ui_MultiLaueMainWindow):
             # Store the default path now that the user has selected a file.
             self.Defaults['DefaultFileDialogDir'], _ = os.path.split(str(FileName))
 
-            AggregateName = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()).toString())
-            TopographName = str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()).toString())
-            SingleName = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()).toString())
+            AggregateName = str(self.comboSumImage.itemData(self.comboSumImage.currentIndex()))
+            TopographName = str(self.comboTopograph.itemData(self.comboTopograph.currentIndex()))
+            SingleName = str(self.comboSingleImage.itemData(self.comboSingleImage.currentIndex()))
 
             FileRoot, FileExt = os.path.splitext(str(FileName))
             FileName = FileRoot + AggregateName + FileExt
@@ -720,12 +722,15 @@ class Main(QtWidgets.QMainWindow, Ui_MultiLaueMainWindow):
             self.Defaults['DefaultFileDialogDir'] = PathName
 
             # The import can be many minutes long, so spin this off into a thread.
-            self.ImportThread = ImportScanThread(FileName, PathName, "StatusFunc(PyQt_PyObject)")
+            #self.ImportThread = ImportScanThread(FileName, PathName, self.StatusFunc.pyqt)
+            self.ImportThread = ImportScanThread(FileName, PathName)
             # ImportScan(FileName, PathName, self.StatusFunc)
 
             # Set up a slot for the thread to update status in the GUI.
-            self.connect(self.ImportThread, QtCore.SIGNAL("StatusFunc(PyQt_PyObject)"), self.StatusFunc)
-            self.connect(self.ImportThread, QtCore.SIGNAL('finished()'), self.ImportScanFinished)
+            self.ImportThread.StatusSignal.connect(self.StatusFunc)
+            self.ImportThread.finished.connect(self.ImportScanFinished)
+            #self.connect(self.ImportThread, QtCore.SIGNAL("StatusFunc(PyQt_PyObject)"), self.StatusFunc)
+            #self.connect(self.ImportThread, QtCore.SIGNAL('finished()'), self.ImportScanFinished)
 
             # Now start the thread
             if sys.gettrace() is None:
@@ -754,11 +759,13 @@ class Main(QtWidgets.QMainWindow, Ui_MultiLaueMainWindow):
             self.Defaults['DefaultFileDialogDir'], _ = os.path.split(str(FileName))
 
             # Make a separate thread for this because this can be an hours-long process.
-            self.MultiLaueThread = MultiLaueProcessing.ProcessMultiLaueThread(str(FileName), "StatusFunc(PyQt_PyObject)")
+            self.MultiLaueThread = MultiLaueProcessing.ProcessMultiLaueThread(str(FileName))
 
             # Set up a slot for the thread to update status in the GUI.
-            self.connect(self.MultiLaueThread, QtCore.SIGNAL("StatusFunc(PyQt_PyObject)"), self.StatusFunc)
-            self.connect(self.MultiLaueThread, QtCore.SIGNAL('finished()'), self.ProcessMultiLaueFinished)
+            self.MultiLaueThread.StatusSignal.connect(self.StatusFunc)
+            self.MultiLaueThread.finished.connect(self.ProcessMultiLaueFinished)
+            # self.connect(self.MultiLaueThread, QtCore.SIGNAL("StatusFunc(PyQt_PyObject)"), self.StatusFunc)
+            # self.connect(self.MultiLaueThread, QtCore.SIGNAL('finished()'), self.ProcessMultiLaueFinished)
 
             # Now start the thread
             if sys.gettrace() is None:
